@@ -5,6 +5,8 @@ Creates and configures the Flask application.
 
 from flask import Flask
 from flask_cors import CORS
+from werkzeug.middleware.proxy_fix import ProxyFix
+from flask_talisman import Talisman
 
 from config import get_config
 from app.extensions import db, migrate, limiter
@@ -17,6 +19,9 @@ def create_app(config_class=None):
     """
     app = Flask(__name__, static_folder=None)
 
+    # Trust Render/Vercel reverse proxies so rate limiter uses the correct client IP
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
     # Load configuration
     if config_class is None:
         config_class = get_config()
@@ -26,6 +31,9 @@ def create_app(config_class=None):
     db.init_app(app)
     migrate.init_app(app, db)
     limiter.init_app(app)
+
+    # Apply HTTP Security Headers
+    Talisman(app, content_security_policy=None, force_https=False)
 
     # CORS — allow frontend origin
     CORS(

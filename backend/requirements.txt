@@ -14,3 +14,5 @@ python-pptx==1.0.2
 openpyxl==3.1.5
 google-genai>=1.0.0
 flask-limiter==3.12
+flask-talisman==1.1.0
+

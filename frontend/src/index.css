@@ -1609,8 +1609,15 @@ button {
   padding: var(--space-sm) var(--space-md);
   background: rgba(0, 0, 0, 0.2);
   border-bottom: var(--border-subtle);
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: var(--space-sm);
+  overflow-x: auto;
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.editor-toolbar::-webkit-scrollbar {
+  display: none;
 }
 
 .toolbar-left {

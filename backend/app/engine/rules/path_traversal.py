@@ -41,6 +41,10 @@ class PathTraversalRule(SecurityRule):
             stripped = line.strip()
             if stripped.startswith('#') or stripped.startswith('//'):
                 continue
+            
+            # Ignore standard import/require statements which naturally contain ../ sequences
+            if stripped.startswith('import ') or stripped.startswith('export ') or 'from "' in stripped or "from '" in stripped or 'require(' in stripped:
+                continue
 
             for pattern, name in self._patterns:
                 match = pattern.search(line)
