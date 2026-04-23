@@ -2,6 +2,7 @@ services:
   - type: web
     name: indai-backend
     runtime: python
+    rootDir: backend
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn "app:create_app()" --bind 0.0.0.0:$PORT --workers 4
     envVars:
