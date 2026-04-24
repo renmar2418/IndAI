@@ -96,7 +96,7 @@ npm run dev
 | Backend | Python 3.12 + Flask |
 | Database | SQLite (dev) / PostgreSQL (prod) |
 | Auth | Google OAuth 2.0 + JWT |
-| Deployment | Vercel (frontend) + Render (backend) |
+| Deployment | Vercel (frontend) + Heroku (backend) |
 
 ## OOP Principles
 
