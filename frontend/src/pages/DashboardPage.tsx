@@ -3,11 +3,12 @@
  * Shows scan statistics, recent scan history with delete + OWASP suggestions.
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import type { DashboardData, OwaspSuggestion, Severity } from "../types";
 import apiService from "../services/api";
 import { useToast } from "../components/ToastProvider";
+import { useAutoRefresh } from "../hooks/useAutoRefresh";
 
 const SEVERITY_COLORS: Record<Severity, string> = {
   critical: "#ef4444",
@@ -22,7 +23,8 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [deletingId, setDeletingId] = useState<number | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState<{ id: number; language: string } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{ id: number; language: string; name: string } | null>(null);
+  const [animatingDeleteId, setAnimatingDeleteId] = useState<number | null>(null);
   const [scanNames, setScanNames] = useState<Record<number, string>>(() => {
     try {
       const stored = localStorage.getItem("indai_scan_names");
@@ -37,6 +39,7 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const { showToast } = useToast();
 
+  // Initial load (shows loading spinner)
   useEffect(() => {
     loadDashboard();
   }, []);
@@ -55,30 +58,53 @@ export default function DashboardPage() {
     }
   }
 
+  // Silent refresh — updates data without showing the loading spinner
+  const silentRefresh = useCallback(async () => {
+    try {
+      const response = await apiService.getDashboard();
+      if (response.success) {
+        setData(response.data);
+      }
+    } catch {
+      // Silent — don't show errors on background refreshes
+    }
+  }, []);
+
+  // Auto-refresh every 30s + refresh on tab focus
+  useAutoRefresh(silentRefresh, { interval: 30000, refreshOnFocus: true });
+
   // Show confirmation modal instead of browser confirm()
-  function requestDelete(scanId: number, language: string) {
-    setConfirmDelete({ id: scanId, language });
+  function requestDelete(scanId: number, language: string, customName?: string) {
+    setConfirmDelete({ id: scanId, language, name: customName || `Scan #${scanId}` });
   }
 
   async function executeDelete() {
     if (!confirmDelete) return;
     const scanId = confirmDelete.id;
+    const scanName = confirmDelete.name;
     setConfirmDelete(null);
 
     setDeletingId(scanId);
     try {
       await apiService.deleteScan(scanId);
-      if (data) {
-        setData({
-          ...data,
-          recent_scans: data.recent_scans.filter((s) => s.id !== scanId),
-          stats: {
-            ...data.stats,
-            total_scans: data.stats.total_scans - 1,
-          },
+      
+      setAnimatingDeleteId(scanId);
+      setTimeout(() => {
+        setData((prevData) => {
+          if (!prevData) return prevData;
+          return {
+            ...prevData,
+            recent_scans: prevData.recent_scans.filter((s) => s.id !== scanId),
+            stats: {
+              ...prevData.stats,
+              total_scans: prevData.stats.total_scans - 1,
+            },
+          };
         });
-      }
-      showToast(`Scan #${scanId} deleted successfully`, "success");
+        setAnimatingDeleteId(null);
+      }, 400);
+
+      showToast(`${scanName} deleted successfully`, "success");
     } catch (err: any) {
       showToast(err.response?.data?.error || "Failed to delete scan", "error");
     } finally {
@@ -396,7 +422,7 @@ export default function DashboardPage() {
               </thead>
               <tbody>
                 {recent_scans.map((scan) => (
-                  <tr key={scan.id} className="scan-row">
+                  <tr key={scan.id} className={`scan-row ${animatingDeleteId === scan.id ? "deleting-exit" : ""}`}>
                     <td>
                       {editingName === scan.id ? (
                         <div className="scan-name-edit">
@@ -479,7 +505,7 @@ export default function DashboardPage() {
                         </button>
                         <button
                           className="btn-delete"
-                          onClick={() => requestDelete(scan.id, scan.language)}
+                          onClick={() => requestDelete(scan.id, scan.language, scanNames[scan.id])}
                           disabled={deletingId === scan.id}
                           title="Delete scan"
                         >
@@ -610,7 +636,7 @@ export default function DashboardPage() {
                 <line x1="14" y1="11" x2="14" y2="17" />
               </svg>
             </div>
-            <h3 className="confirm-title">Delete Scan #{confirmDelete.id}?</h3>
+            <h3 className="confirm-title">Delete {confirmDelete.name}?</h3>
             <p className="confirm-desc">
               This <strong>{confirmDelete.language}</strong> scan will be permanently removed. This action cannot be undone.
             </p>

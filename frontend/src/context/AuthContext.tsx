@@ -58,6 +58,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     checkAuth();
   }, [checkAuth]);
 
+  // Re-validate auth when user switches back to this tab
+  useEffect(() => {
+    function handleVisibility() {
+      if (!document.hidden && localStorage.getItem("indai_token")) {
+        checkAuth();
+      }
+    }
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [checkAuth]);
+
   const login = useCallback(() => {
     // Redirect to Google OAuth via our backend
     const loginUrl = apiService.getGoogleLoginUrl();
