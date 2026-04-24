@@ -4,7 +4,7 @@ services:
     runtime: python
     rootDir: backend
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn "app:create_app()" --bind 0.0.0.0:$PORT --workers 4
+    startCommand: gunicorn "app:create_app()" --bind 0.0.0.0:$PORT --workers 1 --threads 2
     envVars:
       - key: FLASK_ENV
         value: production
@@ -22,6 +22,8 @@ services:
         fromDatabase:
           name: indai-db
           property: connectionString
+      - key: GEMINI_API_KEY
+        sync: false
 
 databases:
   - name: indai-db
