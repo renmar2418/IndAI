@@ -32,13 +32,14 @@ def create_app(config_class=None):
     migrate.init_app(app, db)
     limiter.init_app(app)
 
-    # Apply HTTP Security Headers
-    Talisman(app, content_security_policy=None, force_https=False)
+    # Apply HTTP Security Headers (Force HTTPS in Production)
+    is_prod = not app.config.get("DEBUG", False)
+    Talisman(app, content_security_policy=None, force_https=is_prod)
 
     # CORS — allow frontend origin
     CORS(
         app,
-        origins=[app.config["FRONTEND_URL"]],
+        origins=app.config.get("FRONTEND_URLS", []),
         supports_credentials=True,
         allow_headers=["Content-Type", "Authorization"],
         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],

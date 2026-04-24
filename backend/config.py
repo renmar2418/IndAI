@@ -23,8 +23,10 @@ class Config:
         "http://localhost:5000/api/v1/process/auth/google/callback",
     )
 
-    # Frontend URL
-    FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+    # Frontend URLs (comma-separated for multiple origins)
+    FRONTEND_URLS = os.getenv(
+        "FRONTEND_URLS", "http://localhost:5173,https://ind-ai-five.vercel.app"
+    ).split(",")
 
     # Database
     SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", "sqlite:///indai.db")
@@ -47,6 +49,13 @@ class ProductionConfig(Config):
     """Production configuration (Inheritance)."""
 
     DEBUG = False
+
+    # Security enhancements for production (Cross-Origin Cookies)
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = "None"
+    REMEMBER_COOKIE_SECURE = True
+    REMEMBER_COOKIE_HTTPONLY = True
 
 
 class TestingConfig(Config):
