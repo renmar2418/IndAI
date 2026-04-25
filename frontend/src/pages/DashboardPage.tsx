@@ -88,7 +88,7 @@ export default function DashboardPage() {
     setDeletingId(scanId);
     try {
       await apiService.deleteScan(scanId);
-      
+
       setAnimatingDeleteId(scanId);
       setTimeout(() => {
         setData((prevData) => {

@@ -92,7 +92,7 @@ export default function LandingPage() {
               </svg>
             </div>
             <h3>Instant Scan</h3>
-            <p>Paste your code and get vulnerability analysis in seconds. 15 OWASP rules scan simultaneously.</p>
+            <p>Paste your code and get vulnerability analysis in seconds. OWASP rules scan simultaneously.</p>
           </div>
 
           <div className="feature-card">
@@ -123,11 +123,8 @@ export default function LandingPage() {
 
         {/* Stats */}
         <div className="landing-stats" id="stats-section">
-          <div className="stat-item">
-            <span className="stat-number">15</span>
-            <span className="stat-label">Security Rules</span>
-          </div>
-          <div className="stat-divider" />
+
+
           <div className="stat-item">
             <span className="stat-number">OWASP</span>
             <span className="stat-label">Top 10 Coverage</span>
