@@ -77,7 +77,7 @@ export default function ResultsPanel({ result, isLoading }: ResultsPanelProps) {
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
           </svg>
           <p>Paste your code and click <strong>Scan Code</strong> to begin</p>
-          <p className="empty-sub">IndAI will analyze your code against 15 OWASP security rules</p>
+          <p className="empty-sub">IndAI will analyze your code against OWASP security rules</p>
         </div>
       </div>
     );
@@ -101,8 +101,8 @@ export default function ResultsPanel({ result, isLoading }: ResultsPanelProps) {
                   summary.risk_score > 60
                     ? "#ef4444"
                     : summary.risk_score > 30
-                    ? "#eab308"
-                    : "#22c55e",
+                      ? "#eab308"
+                      : "#22c55e",
               }}
             >
               Risk Score: {summary.risk_score}/100

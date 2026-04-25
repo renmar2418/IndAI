@@ -55,7 +55,7 @@ export default function LandingPage() {
 
           <p className="hero-description">
             Paste your code, detect vulnerabilities instantly, get auto-fixed results.
-            Powered by 15 OWASP security rules with real-time analysis.
+            Powered by OWASP security rules with real-time analysis.
           </p>
 
           <button onClick={login} className="btn-google" id="google-login-button">

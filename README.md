@@ -9,7 +9,7 @@ IndAI is a web-based platform where students authenticate via Google OAuth, past
 ### Key Features
 
 - **Google OAuth Authentication** — Secure student login via Google
-- **15 OWASP Security Rules** — Comprehensive vulnerability scanning
+- **OWASP Security Rules** — Comprehensive vulnerability scanning
 - **Auto-Fix Engine** — Automatic code corrections with security patches
 - **Export Corrected Code** — One-click download of fixed code
 - **Scan History Dashboard** — Track all past scans and statistics

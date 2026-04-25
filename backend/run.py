@@ -30,7 +30,7 @@ if __name__ == "__main__":
     |                                                   |
     |   Server:  http://localhost:{port}                  |
     |   Env:     {env_label:<12s}                        |
-    |   Rules:   15 OWASP Security Rules                |
+    |   Rules:   OWASP Security Rules                |
     |                                                   |
     ===================================================
     """)
