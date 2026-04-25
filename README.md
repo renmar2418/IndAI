@@ -21,28 +21,28 @@ IndAI is a web-based platform where students authenticate via Google OAuth, past
 
 ```
 ┌──────────────────────┐       ┌───────────────────────────┐
-│   React + TypeScript │       │    Flask Backend           │
-│   (Vercel)           │──────▶│    (Render)                │
+│   React + TypeScript │       │    Flask Backend          │
+│   (Vercel)           │──────▶│    (Render/Heroku)       | 
 │                      │       │                           │
 │  • Landing Page      │       │  Experience API Layer     │
 │  • Dashboard         │       │    └─ /api/v1/experience  │
 │  • Scan Page         │       │                           │
 │  • Scan Detail       │       │  Process API Layer        │
-│                      │       │    ├─ auth (Google OAuth)  │
-└──────────────────────┘       │    ├─ scan (Scanner)       │
-                               │    └─ report (History)     │
+│                      │       │    ├─ auth (Google OAuth) │
+└──────────────────────┘       │    ├─ scan (Scanner)      │
+                               │    └─ report (History)    │
                                │                           │
                                │  System API Layer         │
-                               │    ├─ users (CRUD)         │
-                               │    └─ scans (CRUD)         │
+                               │    ├─ users (CRUD)        │
+                               │    └─ scans (CRUD)        │
                                │                           │
                                │  Security Engine          │
                                │    ├─ 15 OWASP Rules      │
-                               │    ├─ RuleFactory          │
-                               │    ├─ Scanner (Facade)     │
-                               │    └─ CodeFixer            │
+                               │    ├─ RuleFactory         │
+                               │    ├─ Scanner (Facade)    │
+                               │    └─ CodeFixer           │
                                │                           │
-                               │  SQLite / PostgreSQL       │
+                               │  SQLite / PostgreSQL      | 
                                └───────────────────────────┘
 ```
 
