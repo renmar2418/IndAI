@@ -8,6 +8,7 @@ import CodeEditor from "../components/CodeEditor";
 import ResultsPanel from "../components/ResultsPanel";
 import AiSummaryPanel from "../components/AiSummaryPanel";
 import ExportButton from "../components/ExportButton";
+import PdfReportButton from "../components/PdfReportButton";
 import apiService from "../services/api";
 import type { ScanResult } from "../types";
 
@@ -105,6 +106,10 @@ export default function ScanPage() {
                 code={result!.corrected_code}
                 language={language}
                 disabled={false}
+              />
+              <PdfReportButton
+                result={result!}
+                language={language}
               />
             </div>
           ) : result && result.total_issues === 0 ? (

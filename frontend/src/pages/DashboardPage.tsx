@@ -9,6 +9,7 @@ import type { DashboardData, OwaspSuggestion, Severity } from "../types";
 import apiService from "../services/api";
 import { useToast } from "../components/ToastProvider";
 import { useAutoRefresh } from "../hooks/useAutoRefresh";
+import { DashboardSkeleton } from "../components/SkeletonLoader";
 
 const SEVERITY_COLORS: Record<Severity, string> = {
   critical: "#ef4444",
@@ -168,17 +169,7 @@ export default function DashboardPage() {
   }
 
   if (loading) {
-    return (
-      <div className="dashboard-page" id="dashboard-page">
-        <div className="page-loader inline">
-          <div className="scanner-animation small">
-            <div className="scanner-ring" />
-            <div className="scanner-ring delay-1" />
-          </div>
-          <p>Loading dashboard...</p>
-        </div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   if (error) {

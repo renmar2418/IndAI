@@ -25,7 +25,7 @@ export function useAutoRefresh(
   options: AutoRefreshOptions = {}
 ) {
   const {
-    interval = 30000,
+    interval = 2000,
     enabled = true,
     refreshOnFocus = true,
   } = options;

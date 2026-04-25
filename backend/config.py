@@ -27,6 +27,7 @@ class Config:
     FRONTEND_URLS = os.getenv(
         "FRONTEND_URLS", "http://localhost:5173,https://ind-ai-five.vercel.app"
     ).split(",")
+    FRONTEND_URL = FRONTEND_URLS[0]
 
     # Database
     SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", "sqlite:///indai.db")

@@ -7,6 +7,7 @@
 import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { ThemeProvider } from "./context/ThemeContext";
 import { ToastProvider } from "./components/ToastProvider";
 import ErrorBoundary from "./components/ErrorBoundary";
 import Header from "./components/Header";
@@ -88,6 +89,7 @@ function KeyboardShortcuts() {
 export default function App() {
   return (
     <BrowserRouter>
+      <ThemeProvider>
       <AuthProvider>
         <ToastProvider>
           <ErrorBoundary>
@@ -135,6 +137,7 @@ export default function App() {
           </ErrorBoundary>
         </ToastProvider>
       </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 }

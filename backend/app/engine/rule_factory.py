@@ -24,6 +24,7 @@ from app.engine.rules.python_eval import PythonEvalRule
 from app.engine.rules.python_sqli import PythonSqlInjectionRule
 from app.engine.rules.python_pickle import PythonPickleRule
 from app.engine.rules.react_dangerously_set import ReactDangerouslySetRule
+from app.engine.rules.dependency_scan import DependencyScanRule
 
 
 class RuleFactory:
@@ -55,6 +56,7 @@ class RuleFactory:
         PythonSqlInjectionRule,
         PythonPickleRule,
         ReactDangerouslySetRule,
+        DependencyScanRule,
     ]
 
     def __init__(self):

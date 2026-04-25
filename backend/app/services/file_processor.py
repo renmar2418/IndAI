@@ -192,6 +192,9 @@ class FileProcessor:
 
         # Allow configuring Tesseract path via .env (e.g., if installed on Drive D)
         tesseract_cmd = os.environ.get("TESSERACT_CMD")
+        if tesseract_cmd:
+            # Strip surrounding quotes that dotenv may include
+            tesseract_cmd = tesseract_cmd.strip('"').strip("'")
         if tesseract_cmd and os.path.exists(tesseract_cmd):
             pytesseract.pytesseract.tesseract_cmd = tesseract_cmd
         elif os.name == 'nt':
@@ -199,6 +202,7 @@ class FileProcessor:
             common_paths = [
                 r'C:\Program Files\Tesseract-OCR\tesseract.exe',
                 r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe',
+                r'D:\Program Files\tesseract.exe',
                 r'D:\Tesseract-OCR\tesseract.exe',
                 r'D:\Program Files\Tesseract-OCR\tesseract.exe'
             ]

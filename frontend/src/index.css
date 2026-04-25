@@ -3969,3 +3969,339 @@ button {
   background: rgba(0, 240, 255, 0.15);
   border-color: rgba(0, 240, 255, 0.4);
 }
+
+/* ============================================
+   LIGHT THEME OVERRIDES
+   ============================================ */
+[data-theme="light"] {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --bg-card: rgba(255, 255, 255, 0.85);
+  --bg-card-hover: rgba(241, 245, 249, 0.9);
+  --bg-elevated: rgba(255, 255, 255, 0.95);
+  --bg-input: rgba(241, 245, 249, 0.9);
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-inverse: #f8fafc;
+
+  --accent-cyan: #0891b2;
+  --accent-purple: #7c3aed;
+  --accent-blue: #2563eb;
+  --accent-green: #16a34a;
+
+  --gradient-accent: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+  --gradient-card: linear-gradient(135deg, rgba(8, 145, 178, 0.04), rgba(124, 58, 237, 0.04));
+  --gradient-glow: radial-gradient(circle, rgba(8, 145, 178, 0.08), transparent 70%);
+
+  --border-subtle: 1px solid rgba(0, 0, 0, 0.06);
+  --border-card: 1px solid rgba(0, 0, 0, 0.08);
+  --border-input: 1px solid rgba(0, 0, 0, 0.12);
+  --border-focus: 1px solid var(--accent-cyan);
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.1);
+  --shadow-glow: 0 0 16px rgba(8, 145, 178, 0.1);
+  --shadow-glow-purple: 0 0 16px rgba(124, 58, 237, 0.1);
+}
+
+[data-theme="light"] body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .header {
+  background: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(12px);
+}
+
+[data-theme="light"] .logo-icon circle {
+  fill: #f8fafc;
+}
+
+[data-theme="light"] .stat-card,
+[data-theme="light"] .scan-card,
+[data-theme="light"] .vuln-card,
+[data-theme="light"] .results-panel,
+[data-theme="light"] .code-editor-container,
+[data-theme="light"] .ai-summary-panel {
+  background: var(--bg-card);
+  border: var(--border-card);
+  box-shadow: var(--shadow-sm);
+}
+
+[data-theme="light"] .stat-card:hover,
+[data-theme="light"] .scan-card:hover {
+  background: var(--bg-card-hover);
+  box-shadow: var(--shadow-md);
+}
+
+[data-theme="light"] .code-textarea {
+  background: #f1f5f9;
+  color: #0f172a;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .code-textarea:focus {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.15);
+}
+
+[data-theme="light"] .editor-toolbar {
+  background: rgba(241, 245, 249, 0.8);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .code-block {
+  background: #1e293b;
+}
+
+[data-theme="light"] .nav-link {
+  color: var(--text-secondary);
+}
+
+[data-theme="light"] .nav-link:hover,
+[data-theme="light"] .nav-link.active {
+  color: var(--accent-cyan);
+}
+
+[data-theme="light"] .mobile-menu {
+  background: rgba(255, 255, 255, 0.98);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .mobile-nav-link {
+  color: var(--text-secondary);
+}
+
+[data-theme="light"] .landing-page {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%);
+}
+
+[data-theme="light"] .landing-hero h1 {
+  background: var(--gradient-accent);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+[data-theme="light"] .results-empty svg {
+  stroke: rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="light"] .confirm-overlay {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="light"] .confirm-dialog {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .scan-error {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #dc2626;
+}
+
+/* ============================================
+   THEME TOGGLE BUTTON
+   ============================================ */
+.btn-theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  border: var(--border-subtle);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.btn-theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--accent-cyan);
+  transform: rotate(15deg);
+}
+
+[data-theme="light"] .btn-theme-toggle {
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .btn-theme-toggle:hover {
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--accent-purple);
+}
+
+/* ============================================
+   SKELETON LOADING
+   ============================================ */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 25%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.04) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+[data-theme="light"] .skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.06) 25%,
+    rgba(0, 0, 0, 0.1) 50%,
+    rgba(0, 0, 0, 0.06) 75%
+  );
+  background-size: 200% 100%;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.skeleton-mt {
+  margin-top: var(--space-sm);
+}
+
+/* ============================================
+   SCAN PROGRESS BAR
+   ============================================ */
+.scan-progress-container {
+  padding: var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+.scan-progress-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.scan-progress-header svg {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.7; filter: drop-shadow(0 0 4px rgba(0, 240, 255, 0.3)); }
+  50% { opacity: 1; filter: drop-shadow(0 0 12px rgba(0, 240, 255, 0.6)); }
+}
+
+.scan-progress-header h3 {
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.scan-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+[data-theme="light"] .scan-progress-bar {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--gradient-accent);
+  border-radius: var(--radius-full);
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.4);
+}
+
+.progress-steps {
+  display: flex;
+  gap: var(--space-lg);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.progress-step {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  transition: all var(--transition-normal);
+}
+
+.progress-step.active {
+  color: var(--accent-cyan);
+  font-weight: 600;
+}
+
+.progress-step.done {
+  color: var(--accent-green);
+}
+
+.step-dot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.7rem;
+  font-weight: 700;
+  transition: all var(--transition-normal);
+}
+
+[data-theme="light"] .step-dot {
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.progress-step.active .step-dot {
+  background: rgba(0, 240, 255, 0.15);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.3);
+}
+
+.progress-step.done .step-dot {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+}
+
+.step-label {
+  white-space: nowrap;
+}
+
+/* ============================================
+   PDF EXPORT BUTTON
+   ============================================ */
+.btn-pdf {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(168, 85, 247, 0.05));
+  border-color: rgba(168, 85, 247, 0.3);
+  color: #c084fc;
+}
+
+.btn-pdf:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(168, 85, 247, 0.1));
+  border-color: rgba(168, 85, 247, 0.5);
+  box-shadow: 0 0 16px rgba(168, 85, 247, 0.2);
+}
+
+.export-section {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}

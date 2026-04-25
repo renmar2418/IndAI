@@ -4,7 +4,7 @@
  * expandable details, code snippets, and fix suggestions.
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { ResultsPanelProps, Vulnerability, Severity } from "../types";
 
 const SEVERITY_CONFIG: Record<
@@ -18,26 +18,55 @@ const SEVERITY_CONFIG: Record<
   info: { label: "INFO", color: "#6b7280", bg: "rgba(107,114,128,0.12)", icon: "⚪" },
 };
 
+const PROGRESS_STEPS = [
+  { label: "Parsing Code", pct: 15 },
+  { label: "Running OWASP Rules", pct: 45 },
+  { label: "Generating AI Summary", pct: 75 },
+  { label: "Finalizing Report", pct: 95 },
+];
+
+function ScanProgressBar() {
+  const [step, setStep] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setStep((prev) => (prev < PROGRESS_STEPS.length - 1 ? prev + 1 : prev));
+    }, 1200);
+    return () => clearInterval(timer);
+  }, []);
+
+  const current = PROGRESS_STEPS[step];
+
+  return (
+    <div className="results-panel" id="results-panel">
+      <div className="scan-progress-container">
+        <div className="scan-progress-header">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#00f0ff" strokeWidth="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          </svg>
+          <h3>Scanning in Progress</h3>
+        </div>
+        <div className="scan-progress-bar">
+          <div className="progress-fill" style={{ width: `${current.pct}%` }} />
+        </div>
+        <div className="progress-steps">
+          {PROGRESS_STEPS.map((s, i) => (
+            <div key={i} className={`progress-step ${i < step ? "done" : i === step ? "active" : ""}`}>
+              <span className="step-dot">{i < step ? "✓" : i + 1}</span>
+              <span className="step-label">{s.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ResultsPanel({ result, isLoading }: ResultsPanelProps) {
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   if (isLoading) {
-    return (
-      <div className="results-panel" id="results-panel">
-        <div className="results-loading">
-          <div className="scanner-animation">
-            <div className="scanner-ring" />
-            <div className="scanner-ring delay-1" />
-            <div className="scanner-ring delay-2" />
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#00f0ff" strokeWidth="2">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-            </svg>
-          </div>
-          <p className="loading-text">Analyzing code for vulnerabilities...</p>
-          <p className="loading-sub">Running 15 OWASP security rules</p>
-        </div>
-      </div>
-    );
+    return <ScanProgressBar />;
   }
 
   if (!result) {
