@@ -292,9 +292,35 @@ export class AgentEngine {
       case "security_tip":
         return this.handleSecurityTip(entities.topic);
 
+      case "unknown":
       default:
+        try {
+          // Transform history to match backend expectations
+          const backendHistory = history.map(msg => ({
+            role: msg.role === "agent" ? "model" : "user",
+            text: msg.text
+          }));
+          
+          // Append current message
+          backendHistory.push({ role: "user", text: message });
+
+          const chatResponse = await apiService.sendAgentMessage(backendHistory, context);
+          if (chatResponse.success && chatResponse.data) {
+            return {
+              id: crypto.randomUUID(),
+              role: "agent",
+              text: chatResponse.data.text,
+              timestamp: new Date(),
+              action: chatResponse.data.action as AgentAction | undefined,
+              suggestions: ["What can you do?", "Show my scans", "Security tips"]
+            };
+          }
+        } catch (e) {
+          console.error("AI Chat fallback failed:", e);
+        }
+        
         return this.makeReply(
-          "I'm not sure I understand that. Try asking me to:\n• **Show my recent scans**\n• **Delete scan #5** or **Delete all scans**\n• **What is SQL injection?**\n• **Go to dashboard**",
+          "I'm not sure I understand that. Try asking me to:\n\n• **Show my recent scans**\n• **Delete scan #5** or **Delete all scans**\n• **What is SQL injection?**\n• **Go to dashboard**",
           undefined,
           ["What can you do?", "Show my scans", "Security tips"]
         );

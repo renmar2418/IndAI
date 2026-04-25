@@ -569,8 +569,15 @@ button {
 }
 
 @keyframes slideDown {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .scan-spinner {
@@ -1612,8 +1619,10 @@ button {
   flex-wrap: nowrap;
   gap: var(--space-sm);
   overflow-x: auto;
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
 }
 
 .editor-toolbar::-webkit-scrollbar {
@@ -2586,16 +2595,37 @@ button {
 }
 
 @keyframes toastSlideIn {
-  from { transform: translateX(100px); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+  from {
+    transform: translateX(100px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
-.toast-success { border-left: 3px solid #22c55e; }
-.toast-error { border-left: 3px solid #ef4444; }
-.toast-warning { border-left: 3px solid #eab308; }
-.toast-info { border-left: 3px solid #00f0ff; }
+.toast-success {
+  border-left: 3px solid #22c55e;
+}
 
-.toast-icon { font-size: 1rem; flex-shrink: 0; }
+.toast-error {
+  border-left: 3px solid #ef4444;
+}
+
+.toast-warning {
+  border-left: 3px solid #eab308;
+}
+
+.toast-info {
+  border-left: 3px solid #00f0ff;
+}
+
+.toast-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
 
 .toast-message {
   flex: 1;
@@ -2617,7 +2647,9 @@ button {
   transition: opacity var(--transition-fast);
 }
 
-.toast-close:hover { opacity: 1; }
+.toast-close:hover {
+  opacity: 1;
+}
 
 /* ============================================
    Dashboard Charts
@@ -2743,11 +2775,13 @@ button {
   .charts-grid {
     grid-template-columns: 1fr;
   }
+
   .toast-container {
     right: 12px;
     left: 12px;
     bottom: 80px;
   }
+
   .toast-item {
     min-width: auto;
   }
@@ -2858,6 +2892,7 @@ button {
     opacity: 0;
     transform: scale(0.85);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -3161,8 +3196,15 @@ button {
 }
 
 @keyframes agentPulse {
-  0%, 100% { box-shadow: 0 4px 20px rgba(168, 85, 247, 0.4), 0 0 40px rgba(168, 85, 247, 0.15); }
-  50% { box-shadow: 0 4px 30px rgba(168, 85, 247, 0.6), 0 0 60px rgba(168, 85, 247, 0.25); }
+
+  0%,
+  100% {
+    box-shadow: 0 4px 20px rgba(168, 85, 247, 0.4), 0 0 40px rgba(168, 85, 247, 0.15);
+  }
+
+  50% {
+    box-shadow: 0 4px 30px rgba(168, 85, 247, 0.6), 0 0 60px rgba(168, 85, 247, 0.25);
+  }
 }
 
 .agent-unread-dot {
@@ -3197,8 +3239,15 @@ button {
 }
 
 @keyframes agentSlideUp {
-  from { opacity: 0; transform: translateY(20px) scale(0.95); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* Header */
@@ -3407,12 +3456,27 @@ button {
   animation: typingBounce 1.4s ease-in-out infinite;
 }
 
-.typing-dot:nth-child(2) { animation-delay: 0.2s; }
-.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+.typing-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
 
 @keyframes typingBounce {
-  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-  30% { transform: translateY(-6px); opacity: 1; }
+
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+
+  30% {
+    transform: translateY(-6px);
+    opacity: 1;
+  }
 }
 
 /* Input Area */
@@ -4143,29 +4207,30 @@ button {
    SKELETON LOADING
    ============================================ */
 .skeleton {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.04) 25%,
-    rgba(255, 255, 255, 0.08) 50%,
-    rgba(255, 255, 255, 0.04) 75%
-  );
+  background: linear-gradient(90deg,
+      rgba(255, 255, 255, 0.04) 25%,
+      rgba(255, 255, 255, 0.08) 50%,
+      rgba(255, 255, 255, 0.04) 75%);
   background-size: 200% 100%;
   animation: skeleton-shimmer 1.5s ease-in-out infinite;
 }
 
 [data-theme="light"] .skeleton {
-  background: linear-gradient(
-    90deg,
-    rgba(0, 0, 0, 0.06) 25%,
-    rgba(0, 0, 0, 0.1) 50%,
-    rgba(0, 0, 0, 0.06) 75%
-  );
+  background: linear-gradient(90deg,
+      rgba(0, 0, 0, 0.06) 25%,
+      rgba(0, 0, 0, 0.1) 50%,
+      rgba(0, 0, 0, 0.06) 75%);
   background-size: 200% 100%;
 }
 
 @keyframes skeleton-shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .skeleton-mt {
@@ -4194,8 +4259,17 @@ button {
 }
 
 @keyframes pulse-glow {
-  0%, 100% { opacity: 0.7; filter: drop-shadow(0 0 4px rgba(0, 240, 255, 0.3)); }
-  50% { opacity: 1; filter: drop-shadow(0 0 12px rgba(0, 240, 255, 0.6)); }
+
+  0%,
+  100% {
+    opacity: 0.7;
+    filter: drop-shadow(0 0 4px rgba(0, 240, 255, 0.3));
+  }
+
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 12px rgba(0, 240, 255, 0.6));
+  }
 }
 
 .scan-progress-header h3 {
