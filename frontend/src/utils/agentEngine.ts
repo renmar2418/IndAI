@@ -296,7 +296,7 @@ export class AgentEngine {
       default:
         try {
           // Transform history to match backend expectations
-          const backendHistory = history.map(msg => ({
+          const backendHistory = _history.map((msg: AgentMessage) => ({
             role: msg.role === "agent" ? "model" : "user",
             text: msg.text
           }));

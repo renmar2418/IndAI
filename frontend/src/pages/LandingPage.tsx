@@ -147,7 +147,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="landing-footer">
-        <p>IndAI — Intelligent Detection AI © 2026. Built for Code Security.</p>
+        <p>IndAI — Intelligent Detection AI © 2026. Built for Code Security. By Gombio - Programmer/Developer</p>
       </footer>
     </div>
   );

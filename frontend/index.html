@@ -8,6 +8,20 @@
     <meta name="theme-color" content="#060a14" />
     <meta name="keywords" content="code security, vulnerability scanner, OWASP, static analysis, code audit, IndAI" />
     <title>IndAI — Intelligent Detection AI | Code Security Auditor</title>
+    <script>
+      (function() {
+        try {
+          var stored = localStorage.getItem('indai_theme');
+          var theme = stored;
+          if (!theme) {
+            theme = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+          }
+          if (theme === 'light') {
+            document.documentElement.setAttribute('data-theme', 'light');
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
