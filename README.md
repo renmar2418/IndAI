@@ -37,7 +37,7 @@ IndAI is a web-based platform where students authenticate via Google OAuth, past
                                │    └─ scans (CRUD)        │
                                │                           │
                                │  Security Engine          │
-                               │    ├─ 15 OWASP Rules      │
+                               │    ├─ OWASP Rules      │
                                │    ├─ RuleFactory         │
                                │    ├─ Scanner (Facade)    │
                                │    └─ CodeFixer           │
