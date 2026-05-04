@@ -29,8 +29,12 @@ export default function CallbackPage() {
     }
 
     if (token) {
-      setTokenAndFetch(token).then(() => {
-        navigate("/dashboard", { replace: true });
+      setTokenAndFetch(token).then((user) => {
+        if (user?.role === 'admin') {
+          navigate("/admin", { replace: true });
+        } else {
+          navigate("/dashboard", { replace: true });
+        }
       });
     } else {
       setError("No token received. Please try logging in again.");

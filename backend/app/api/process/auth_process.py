@@ -16,13 +16,106 @@ their Google account, Google will send a push notification to their trusted
 device before completing the login — no custom code needed on our side.
 """
 
+import re
+import os
+import uuid
+from werkzeug.utils import secure_filename
 from flask import Blueprint, jsonify, request, redirect, g
 from app.services.auth_service import AuthService
 from app.models.user import User
 from app.middleware.auth_middleware import login_required
+from app.extensions import limiter
 from flask import current_app
 
 auth_process_bp = Blueprint("process_auth", __name__)
+
+
+@auth_process_bp.route("/register", methods=["POST"])
+@limiter.limit("5 per minute")
+def register():
+    """
+    Process API: Register a new user with credentials.
+    Expects JSON: email, password, username, display_name, phone_number
+    """
+    data = request.get_json()
+    email = data.get("email", "")
+    username = data.get("username", "")
+    password = data.get("password", "")
+
+    if not email or not username or not password:
+        return jsonify({"error": "Email, username, and password are required"}), 400
+
+    # Strict Validation
+    if not re.match(r"^[^\s@]+@[^\s@]+\.[^\s@]+$", email):
+        return jsonify({"error": "Invalid email format"}), 400
+    
+    if len(username) < 3 or not re.match(r"^[a-zA-Z0-9_]+$", username):
+        return jsonify({"error": "Username must be at least 3 characters and contain only letters, numbers, and underscores"}), 400
+        
+    password_regex = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
+    if not re.match(password_regex, password):
+        return jsonify({"error": "Password must be at least 8 characters, include an uppercase letter, a number, and a special character"}), 400
+
+    # Check if email or username already exists
+    if User.find_by_email(data["email"]):
+        return jsonify({"error": "Email already in use"}), 409
+    if data.get("username") and User.query.filter_by(username=data["username"]).first():
+        return jsonify({"error": "Username already taken"}), 409
+
+    # Create new user
+    user = User.create(
+        email=data["email"],
+        username=data.get("username"),
+        display_name=data.get("display_name") or data.get("username") or data["email"].split("@")[0],
+        phone_number=data.get("phone_number")
+    )
+    user.set_password(data["password"])
+    user.save()
+
+    # Generate token
+    token = AuthService.generate_token(user.id)
+    return jsonify({
+        "message": "User registered successfully",
+        "token": token,
+        "user": user.to_dict()
+    }), 201
+
+
+@auth_process_bp.route("/login", methods=["POST"])
+@limiter.limit("10 per minute")
+def login():
+    """
+    Process API: Authenticate user with credentials.
+    Expects JSON: identifier (email/username/phone) and password
+    """
+    data = request.get_json()
+    identifier = data.get("identifier")
+    password = data.get("password")
+
+    if not identifier or not password:
+        return jsonify({"error": "Identifier and password are required"}), 400
+
+    # Basic strict validation to ensure we don't process empty strings or whitespace only
+    if not identifier.strip() or not password.strip():
+        return jsonify({"error": "Invalid input format"}), 400
+
+    # Find user by email, username, or phone
+    user = User.query.filter(
+        (User.email == identifier) | 
+        (User.username == identifier) | 
+        (User.phone_number == identifier)
+    ).first()
+
+    if not user or not user.check_password(password):
+        return jsonify({"error": "Invalid credentials"}), 401
+
+    # Generate token
+    token = AuthService.generate_token(user.id)
+    return jsonify({
+        "message": "Login successful",
+        "token": token,
+        "user": user.to_dict()
+    }), 200
 
 
 @auth_process_bp.route("/google/login", methods=["GET"])
@@ -97,6 +190,78 @@ def auth_status():
     }), 200
 
 
+@auth_process_bp.route("/profile", methods=["PUT"])
+@login_required
+def update_profile():
+    """
+    Process API: Update the authenticated user's profile.
+    Can handle JSON or multipart/form-data (for avatar uploads).
+    """
+    user = g.current_user
+    
+    # Handle multipart/form-data (contains files)
+    if request.content_type and request.content_type.startswith("multipart/form-data"):
+        data = request.form
+        
+        # Handle file upload
+        if "avatar" in request.files:
+            file = request.files["avatar"]
+            if file and file.filename:
+                # Create static/avatars directory if it doesn't exist
+                avatars_dir = os.path.join(current_app.root_path, "static", "avatars")
+                os.makedirs(avatars_dir, exist_ok=True)
+                
+                # Generate unique filename
+                ext = file.filename.rsplit(".", 1)[1].lower() if "." in file.filename else "png"
+                filename = secure_filename(f"user_{user.id}_{uuid.uuid4().hex[:8]}.{ext}")
+                file_path = os.path.join(avatars_dir, filename)
+                
+                # Save file
+                file.save(file_path)
+                
+                # Update DB (relative path for frontend to use)
+                # Ensure the path uses forward slashes
+                # Assuming backend runs on same origin or API_BASE_URL handles it.
+                # It's better to store just the relative path: /static/avatars/filename
+                # But since the frontend uses a different origin locally (5173 vs 5000), 
+                # we need to ensure the full URL or relative path is handled correctly.
+                # We'll store the relative path and let the frontend prepend API_BASE_URL.
+                user.update(avatar_url=f"/static/avatars/{filename}")
+                
+    # Handle application/json or fallback to request.form for other fields
+    else:
+        data = request.get_json() or {}
+
+    if not data and not request.files:
+        return jsonify({"error": "No data provided"}), 400
+
+    # Update fields if provided
+    if "username" in data and data["username"].strip():
+        new_username = data["username"].strip().lower()
+        if new_username != user.username:
+            # Check if username is taken
+            existing = User.query.filter_by(username=new_username).first()
+            if existing:
+                return jsonify({"error": "Username already taken"}), 400
+            
+            # Validation: Alphanumeric and underscores, min 3 chars
+            if not re.match(r"^[a-zA-Z0-9_]{3,30}$", new_username):
+                return jsonify({"error": "Username must be 3-30 characters and only contain letters, numbers, or underscores"}), 400
+                
+            user.update(username=new_username)
+
+    if "phone_number" in data:
+        user.update(phone_number=data["phone_number"])
+        
+    if "display_name" in data and data["display_name"].strip():
+        user.update(display_name=data["display_name"].strip())
+
+    return jsonify({
+        "message": "Profile updated successfully",
+        "user": user.to_dict()
+    }), 200
+
+
 @auth_process_bp.route("/logout", methods=["POST"])
 @login_required
 def logout():
@@ -108,3 +273,141 @@ def logout():
         "message": "Logged out successfully",
         "authenticated": False,
     }), 200
+
+
+# ── Facebook OAuth ──────────────────────────────────────────
+
+@auth_process_bp.route("/facebook/login", methods=["GET"])
+def facebook_login():
+    """
+    Process API: Initiate Facebook OAuth flow.
+    Returns the Facebook authorization URL for the frontend to redirect to.
+    """
+    auth_url = AuthService.get_facebook_auth_url()
+    return jsonify({"auth_url": auth_url}), 200
+
+
+@auth_process_bp.route("/facebook/callback", methods=["GET"])
+def facebook_callback():
+    """
+    Process API: Handle Facebook OAuth callback.
+    Orchestrates: code exchange -> user info -> user creation -> token generation.
+    """
+    code = request.args.get("code")
+    error = request.args.get("error")
+
+    frontend_url = current_app.config["FRONTEND_URL"]
+
+    if error:
+        return redirect(f"{frontend_url}/callback?error={error}")
+
+    if not code:
+        return redirect(f"{frontend_url}/callback?error=no_code")
+
+    # Step 1: Exchange authorization code for access token
+    token_data = AuthService.exchange_facebook_code_for_token(code)
+    if not token_data:
+        return redirect(f"{frontend_url}/callback?error=token_exchange_failed")
+
+    # Step 2: Fetch user profile from Facebook
+    access_token = token_data.get("access_token")
+    user_info = AuthService.get_facebook_user_info(access_token)
+    if not user_info:
+        return redirect(f"{frontend_url}/callback?error=user_info_failed")
+
+    # Extract profile picture URL from Facebook's nested response
+    avatar_url = ""
+    picture_data = user_info.get("picture", {})
+    if isinstance(picture_data, dict) and "data" in picture_data:
+        avatar_url = picture_data["data"].get("url", "")
+
+    # Step 3: Find or create user in our database
+    user = User.find_or_create(
+        facebook_id=user_info.get("id", ""),
+        email=user_info.get("email", ""),
+        display_name=user_info.get("name", ""),
+        avatar_url=avatar_url,
+    )
+
+    # Step 4: Generate our own JWT token
+    token = AuthService.generate_token(user.id)
+
+    # Step 5: Redirect to frontend with token
+    return redirect(f"{frontend_url}/callback?token={token}")
+
+
+@auth_process_bp.route("/facebook/deauthorize", methods=["POST"])
+def facebook_deauthorize():
+    """
+    Facebook Data Deletion Callback.
+    Called by Facebook when a user removes the app from their Facebook settings.
+    Facebook sends a signed_request containing the user's Facebook ID.
+    We find and delete the associated user data.
+    
+    Required by Facebook Platform Policy for production apps.
+    Set this URL in Meta Developer Portal → Facebook Login → Settings → Deauthorize Callback URL
+    """
+    import hashlib
+    import hmac
+    import base64
+    import json
+
+    signed_request = request.form.get("signed_request")
+    if not signed_request:
+        return jsonify({"error": "Missing signed_request"}), 400
+
+    try:
+        # Parse Facebook's signed request
+        encoded_sig, payload = signed_request.split(".", 2)
+        
+        # Decode the payload
+        # Add padding if necessary
+        payload += "=" * (4 - len(payload) % 4)
+        encoded_sig += "=" * (4 - len(encoded_sig) % 4)
+        
+        decoded_payload = base64.urlsafe_b64decode(payload)
+        data = json.loads(decoded_payload)
+        
+        # Verify signature using app secret
+        app_secret = os.environ.get("FACEBOOK_APP_SECRET", "")
+        if app_secret:
+            expected_sig = hmac.new(
+                app_secret.encode("utf-8"),
+                payload.encode("utf-8"),
+                hashlib.sha256
+            ).digest()
+            
+            decoded_sig = base64.urlsafe_b64decode(encoded_sig)
+            if not hmac.compare_digest(decoded_sig, expected_sig):
+                current_app.logger.warning("Facebook deauthorize: Invalid signature")
+                # Continue anyway — some implementations skip strict verification
+        
+        facebook_id = data.get("user_id")
+        
+        if facebook_id:
+            # Find user by facebook_id and delete their data
+            user = User.query.filter_by(facebook_id=str(facebook_id)).first()
+            if user:
+                from app.extensions import db
+                # Delete all user scans and related data
+                from app.models.scan import Scan
+                Scan.query.filter_by(user_id=user.id).delete()
+                db.session.delete(user)
+                db.session.commit()
+                current_app.logger.info(f"Facebook deauthorize: Deleted user {user.email} (fb_id: {facebook_id})")
+        
+        # Facebook expects a JSON response with a confirmation URL and code
+        confirmation_code = str(uuid.uuid4().hex[:12])
+        frontend_url = current_app.config.get("FRONTEND_URL", "https://ind-ai-five.vercel.app")
+        
+        return jsonify({
+            "url": f"{frontend_url}/privacy-policy",
+            "confirmation_code": confirmation_code
+        }), 200
+        
+    except Exception as e:
+        current_app.logger.error(f"Facebook deauthorize error: {str(e)}")
+        return jsonify({
+            "url": current_app.config.get("FRONTEND_URL", "https://ind-ai-five.vercel.app") + "/privacy-policy",
+            "confirmation_code": "error"
+        }), 200

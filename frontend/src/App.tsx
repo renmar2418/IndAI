@@ -10,15 +10,32 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { ToastProvider } from "./components/ToastProvider";
 import ErrorBoundary from "./components/ErrorBoundary";
-import Header from "./components/Header";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { BackgroundScanProvider } from "./context/BackgroundScanContext";
 import AgenticWidget from "./components/AgenticWidget";
+import UserLayout from "./components/UserLayout";
+import AdminLayout from "./components/AdminLayout";
 import LandingPage from "./pages/LandingPage";
+import DemoPage from "./pages/DemoPage";
+import AuthPage from "./pages/AuthPage";
 import DashboardPage from "./pages/DashboardPage";
+import ProfilePage from "./pages/ProfilePage";
 import ScanPage from "./pages/ScanPage";
 import ScanDetailPage from "./pages/ScanDetailPage";
 import CallbackPage from "./pages/CallbackPage";
 import NotFoundPage from "./pages/NotFoundPage";
+import ShareSnippetPage from "./pages/ShareSnippetPage";
+import ViewSnippetPage from "./pages/ViewSnippetPage";
+import QuickSharePage from "./pages/QuickSharePage";
+import GitHubPage from "./pages/GitHubPage";
+import AdminPage from "./pages/AdminPage";
+import AdminUsersPage from "./pages/AdminUsersPage";
+import AdminAuditLogPage from "./pages/AdminAuditLogPage";
+import AdminConfigPage from "./pages/AdminConfigPage";
+import AdminAlertsPage from "./pages/AdminAlertsPage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import TermsOfServicePage from "./pages/TermsOfServicePage";
+import { AdminRoute } from "./components/AdminRoute";
 
 /** Widget wrapper — only shows when user is authenticated */
 function AuthenticatedWidget() {
@@ -92,40 +109,42 @@ export default function App() {
       <ThemeProvider>
       <AuthProvider>
         <ToastProvider>
-          <ErrorBoundary>
-            <div className="app-shell" id="app-shell">
-              <Header />
+          <BackgroundScanProvider>
+            <ErrorBoundary>
               <KeyboardShortcuts />
               <Routes>
                 {/* Public Routes */}
                 <Route path="/" element={<LandingPage />} />
+                <Route path="/demo" element={<DemoPage />} />
+                <Route path="/auth" element={<AuthPage />} />
                 <Route path="/callback" element={<CallbackPage />} />
+                <Route path="/s/:shortId" element={<ViewSnippetPage />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+                <Route path="/terms" element={<TermsOfServicePage />} />
 
-                {/* Protected Routes */}
-                <Route
-                  path="/dashboard"
-                  element={
-                    <ProtectedRoute>
-                      <DashboardPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/scan"
-                  element={
-                    <ProtectedRoute>
-                      <ScanPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/scan/:scanId"
-                  element={
-                    <ProtectedRoute>
-                      <ScanDetailPage />
-                    </ProtectedRoute>
-                  }
-                />
+                {/* Admin Portal (Isolated Shell) */}
+                <Route element={<AdminRoute />}>
+                  <Route element={<AdminLayout />}>
+                    <Route path="/admin" element={<AdminPage />} />
+                    <Route path="/admin/users" element={<AdminUsersPage />} />
+                    <Route path="/admin/config" element={<AdminConfigPage />} />
+                    <Route path="/admin/audit" element={<AdminAuditLogPage />} />
+                    <Route path="/admin/alerts" element={<AdminAlertsPage />} />
+                  </Route>
+                </Route>
+
+                {/* User App (Standard Shell) */}
+                <Route element={<ProtectedRoute />}>
+                  <Route element={<UserLayout />}>
+                    <Route path="/dashboard" element={<DashboardPage />} />
+                    <Route path="/profile" element={<ProfilePage />} />
+                    <Route path="/scan" element={<ScanPage />} />
+                    <Route path="/scan/:scanId" element={<ScanDetailPage />} />
+                    <Route path="/github" element={<GitHubPage />} />
+                    <Route path="/share" element={<ShareSnippetPage />} />
+                    <Route path="/quickshare" element={<QuickSharePage />} />
+                  </Route>
+                </Route>
 
                 {/* 404 Catch-all */}
                 <Route path="*" element={<NotFoundPage />} />
@@ -133,8 +152,8 @@ export default function App() {
 
               {/* Floating AI Assistant — visible on all pages when logged in */}
               <AuthenticatedWidget />
-            </div>
-          </ErrorBoundary>
+            </ErrorBoundary>
+          </BackgroundScanProvider>
         </ToastProvider>
       </AuthProvider>
       </ThemeProvider>

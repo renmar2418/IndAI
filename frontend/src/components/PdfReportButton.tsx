@@ -29,153 +29,254 @@ export default function PdfReportButton({ result, language }: PdfReportButtonPro
     try {
       const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
       const pageWidth = doc.internal.pageSize.getWidth();
-      const margin = 15;
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 20;
       const contentWidth = pageWidth - margin * 2;
       let y = margin;
 
-      // === Header ===
-      doc.setFillColor(6, 10, 20);
-      doc.rect(0, 0, pageWidth, 35, "F");
+      // Helper function for new pages
+      const checkPageBreak = (neededHeight: number) => {
+        if (y + neededHeight > pageHeight - margin) {
+          doc.addPage();
+          y = margin;
+          // Add subtle header to continued pages
+          doc.setFillColor(248, 250, 252);
+          doc.rect(0, 0, pageWidth, 15, "F");
+          doc.setTextColor(148, 163, 184);
+          doc.setFontSize(8);
+          doc.setFont("helvetica", "normal");
+          doc.text("IndAI Security Vulnerability Report - Continued", margin, 10);
+          y = 25;
+        }
+      };
 
-      doc.setTextColor(0, 240, 255);
-      doc.setFontSize(22);
+      // === Professional Cover / Header ===
+      // Deep blue branding header
+      doc.setFillColor(15, 23, 42); 
+      doc.rect(0, 0, pageWidth, 45, "F");
+
+      // Logo/Title
+      doc.setTextColor(0, 240, 255); // Cyan accent
+      doc.setFontSize(28);
       doc.setFont("helvetica", "bold");
-      doc.text("IndAI", margin, 18);
+      doc.text("IndAI", margin, 22);
 
-      doc.setTextColor(168, 85, 247);
-      doc.setFontSize(12);
-      doc.text("Security Vulnerability Report", margin, 27);
-
-      doc.setTextColor(148, 163, 184);
-      doc.setFontSize(9);
-      doc.text(new Date().toLocaleString(), pageWidth - margin, 27, { align: "right" });
-
-      y = 45;
-
-      // === Summary Box ===
-      doc.setFillColor(15, 23, 42);
-      doc.roundedRect(margin, y, contentWidth, 30, 3, 3, "F");
-
-      doc.setTextColor(226, 232, 240);
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "bold");
-      doc.text("Scan Summary", margin + 5, y + 8);
-
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(14);
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      doc.setTextColor(148, 163, 184);
-      doc.text(`Language: ${language.toUpperCase()}`, margin + 5, y + 15);
-      doc.text(`Total Issues: ${result.total_issues}`, margin + 60, y + 15);
-      doc.text(`Risk Score: ${result.summary.risk_score ?? "N/A"}/100`, margin + 110, y + 15);
+      doc.text("Automated Security Audit Report", margin, 32);
 
-      // Severity breakdown
-      const severities = result.summary.by_severity;
-      let sx = margin + 5;
-      doc.text("Severity:", sx, y + 23);
-      sx += 22;
-      for (const [sev, count] of Object.entries(severities)) {
+      // Date & Meta
+      doc.setTextColor(148, 163, 184);
+      doc.setFontSize(10);
+      doc.text(new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }), pageWidth - margin, 25, { align: "right" });
+      doc.text(`Target: ${language.toUpperCase()} Codebase`, pageWidth - margin, 32, { align: "right" });
+
+      y = 55;
+
+      // === Executive Summary Section ===
+      doc.setTextColor(15, 23, 42);
+      doc.setFontSize(16);
+      doc.setFont("helvetica", "bold");
+      doc.text("Executive Summary", margin, y);
+      
+      // Horizontal Rule
+      y += 4;
+      doc.setDrawColor(226, 232, 240);
+      doc.setLineWidth(0.5);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 8;
+
+      // Summary Grid
+      const gridY = y;
+      doc.setFillColor(248, 250, 252); // Light slate
+      doc.setDrawColor(226, 232, 240);
+      doc.roundedRect(margin, gridY, contentWidth, 35, 2, 2, "FD");
+
+      // Score
+      doc.setTextColor(100, 116, 139);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.text("RISK SCORE", margin + 10, gridY + 12);
+      
+      doc.setTextColor((result.summary?.risk_score ?? 0) > 60 ? 239 : ((result.summary?.risk_score ?? 0) > 30 ? 234 : 34), 
+                       (result.summary?.risk_score ?? 0) > 60 ? 68 : ((result.summary?.risk_score ?? 0) > 30 ? 179 : 197), 
+                       (result.summary?.risk_score ?? 0) > 60 ? 68 : ((result.summary?.risk_score ?? 0) > 30 ? 8 : 94));
+      doc.setFontSize(24);
+      doc.text(`${result.summary?.risk_score ?? 0}/100`, margin + 10, gridY + 24);
+
+      // Total Issues
+      doc.setTextColor(100, 116, 139);
+      doc.setFontSize(10);
+      doc.text("TOTAL ISSUES", margin + 60, gridY + 12);
+      doc.setTextColor(15, 23, 42);
+      doc.setFontSize(24);
+      doc.text(`${result.total_issues}`, margin + 60, gridY + 24);
+
+      // Breakdown
+      doc.setTextColor(100, 116, 139);
+      doc.setFontSize(10);
+      doc.text("SEVERITY BREAKDOWN", margin + 110, gridY + 12);
+      
+      let bx = margin + 110;
+      doc.setFontSize(9);
+      for (const [sev, count] of Object.entries(result.summary.by_severity)) {
         if (count === 0) continue;
         const color = SEVERITY_COLORS[sev] || [107, 114, 128];
         doc.setTextColor(color[0], color[1], color[2]);
-        const label = `${sev.toUpperCase()}: ${count}`;
-        doc.text(label, sx, y + 23);
-        sx += doc.getTextWidth(label) + 8;
+        doc.text(`${sev.toUpperCase()}: ${count}`, bx, gridY + 22);
+        bx += 25;
       }
 
-      y += 38;
+      y += 50;
 
-      // === Vulnerabilities ===
-      doc.setTextColor(226, 232, 240);
-      doc.setFontSize(13);
+      // === Vulnerability Details ===
+      doc.setTextColor(15, 23, 42);
+      doc.setFontSize(16);
       doc.setFont("helvetica", "bold");
-      doc.text("Detected Vulnerabilities", margin, y);
-      y += 8;
+      doc.text("Detailed Findings", margin, y);
+      y += 4;
+      doc.setDrawColor(226, 232, 240);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 10;
 
       result.vulnerabilities.forEach((vuln: Vulnerability, index: number) => {
-        // Check if we need a new page
-        if (y > 260) {
-          doc.addPage();
-          y = margin;
-        }
-
         const color = SEVERITY_COLORS[vuln.severity] || [107, 114, 128];
+        
+        checkPageBreak(30);
 
-        // Severity badge
+        // Finding Header Background (very light tint of severity color)
         doc.setFillColor(color[0], color[1], color[2]);
-        doc.roundedRect(margin, y, 18, 5, 1, 1, "F");
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(7);
-        doc.setFont("helvetica", "bold");
-        doc.text(vuln.severity.toUpperCase(), margin + 1, y + 3.8);
+        doc.setGState(new (doc as any).GState({opacity: 0.05}));
+        doc.rect(margin, y, contentWidth, 10, "F");
+        doc.setGState(new (doc as any).GState({opacity: 1.0}));
+
+        // Left accent border
+        doc.setFillColor(color[0], color[1], color[2]);
+        doc.rect(margin, y, 3, 10, "F");
 
         // Title
-        doc.setTextColor(226, 232, 240);
-        doc.setFontSize(10);
+        doc.setTextColor(15, 23, 42);
+        doc.setFontSize(11);
         doc.setFont("helvetica", "bold");
-        doc.text(`${index + 1}. ${vuln.title}`, margin + 22, y + 4);
-        y += 8;
-
-        // Rule ID + Line
-        doc.setTextColor(148, 163, 184);
+        doc.text(`${index + 1}. ${vuln.title}`, margin + 6, y + 6.5);
+        
+        // Severity Badge (right aligned)
+        const sevText = vuln.severity.toUpperCase();
         doc.setFontSize(8);
+        const sevWidth = doc.getTextWidth(sevText);
+        doc.setFillColor(color[0], color[1], color[2]);
+        doc.roundedRect(pageWidth - margin - sevWidth - 6, y + 2.5, sevWidth + 4, 5, 1, 1, "F");
+        doc.setTextColor(255, 255, 255);
+        doc.text(sevText, pageWidth - margin - sevWidth - 4, y + 6);
+        
+        y += 14;
+
+        // Meta Info
+        doc.setTextColor(100, 116, 139);
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        doc.text("Rule ID: ", margin, y);
         doc.setFont("helvetica", "normal");
-        doc.text(`${vuln.rule_id}${vuln.line_number ? ` • Line ${vuln.line_number}` : ""}${vuln.owasp_category ? ` • ${vuln.owasp_category}` : ""}`, margin + 3, y);
-        y += 5;
+        doc.text(`${vuln.rule_id}`, margin + 15, y);
+        
+        if (vuln.line_number) {
+            doc.setFont("helvetica", "bold");
+            doc.text("Location: ", margin + 60, y);
+            doc.setFont("helvetica", "normal");
+            doc.text(`Line ${vuln.line_number}`, margin + 76, y);
+        }
+
+        if (vuln.owasp_category) {
+            doc.setFont("helvetica", "bold");
+            doc.text("OWASP: ", margin + 110, y);
+            doc.setFont("helvetica", "normal");
+            doc.text(`${vuln.owasp_category}`, margin + 125, y);
+        }
+        
+        y += 6;
 
         // Description
-        doc.setTextColor(180, 190, 210);
-        doc.setFontSize(8);
-        const descLines = doc.splitTextToSize(vuln.description, contentWidth - 6);
-        doc.text(descLines, margin + 3, y);
-        y += descLines.length * 3.5 + 2;
+        doc.setTextColor(51, 65, 85);
+        doc.setFontSize(9);
+        const descLines = doc.splitTextToSize(vuln.description, contentWidth);
+        checkPageBreak(descLines.length * 5);
+        doc.text(descLines, margin, y);
+        y += descLines.length * 4.5 + 4;
 
-        // Code snippet
+        // Code Snippet (Vulnerable Code)
         if (vuln.code_snippet) {
-          if (y > 260) { doc.addPage(); y = margin; }
-          doc.setFillColor(20, 25, 40);
-          const snippetLines = doc.splitTextToSize(vuln.code_snippet.trim(), contentWidth - 10);
-          const snippetHeight = snippetLines.length * 3.5 + 4;
-          doc.roundedRect(margin + 3, y, contentWidth - 6, snippetHeight, 2, 2, "F");
-          doc.setTextColor(239, 68, 68);
-          doc.setFontSize(7);
+          const snippetLines = doc.splitTextToSize(vuln.code_snippet.trim(), contentWidth - 8);
+          const snippetHeight = snippetLines.length * 4 + 8;
+          checkPageBreak(snippetHeight + 10);
+          
+          doc.setTextColor(239, 68, 68); // Red label
+          doc.setFontSize(8);
+          doc.setFont("helvetica", "bold");
+          doc.text("VULNERABLE CODE", margin, y);
+          y += 3;
+
+          doc.setFillColor(248, 250, 252); // Light gray block
+          doc.setDrawColor(226, 232, 240);
+          doc.roundedRect(margin, y, contentWidth, snippetHeight, 1, 1, "FD");
+          
+          doc.setTextColor(15, 23, 42); // Dark text
           doc.setFont("courier", "normal");
-          doc.text(snippetLines, margin + 6, y + 4);
-          y += snippetHeight + 3;
+          doc.text(snippetLines, margin + 4, y + 6);
+          y += snippetHeight + 6;
         }
 
-        // Suggested fix
-        if (vuln.suggested_fix) {
-          if (y > 260) { doc.addPage(); y = margin; }
-          doc.setFillColor(15, 30, 20);
-          const fixLines = doc.splitTextToSize(vuln.suggested_fix.trim(), contentWidth - 10);
-          const fixHeight = fixLines.length * 3.5 + 4;
-          doc.roundedRect(margin + 3, y, contentWidth - 6, fixHeight, 2, 2, "F");
-          doc.setTextColor(34, 197, 94);
-          doc.setFontSize(7);
+        // Suggested Fix
+        const fixText = vuln.accurate_fix || vuln.suggested_fix;
+        if (fixText) {
+          const fixLines = doc.splitTextToSize(fixText.trim(), contentWidth - 8);
+          const fixHeight = fixLines.length * 4 + 8;
+          checkPageBreak(fixHeight + 10);
+          
+          doc.setTextColor(34, 197, 94); // Green label
+          doc.setFontSize(8);
+          doc.setFont("helvetica", "bold");
+          doc.text("SUGGESTED REMEDIATION", margin, y);
+          y += 3;
+
+          doc.setFillColor(240, 253, 244); // Very light green block
+          doc.setDrawColor(187, 247, 208);
+          doc.roundedRect(margin, y, contentWidth, fixHeight, 1, 1, "FD");
+          
+          doc.setTextColor(20, 83, 45); // Dark green text
           doc.setFont("courier", "normal");
-          doc.text(fixLines, margin + 6, y + 4);
-          y += fixHeight + 3;
+          doc.text(fixLines, margin + 4, y + 6);
+          y += fixHeight + 8;
         }
 
-        y += 4; // spacing between vulnerabilities
+        y += 6; // Spacing before next finding
       });
 
       // === Footer ===
       const pageCount = doc.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
-        doc.setTextColor(100, 116, 139);
-        doc.setFontSize(7);
+        doc.setTextColor(148, 163, 184);
+        doc.setFontSize(8);
         doc.setFont("helvetica", "normal");
+        
+        doc.setDrawColor(226, 232, 240);
+        doc.line(margin, pageHeight - 15, pageWidth - margin, pageHeight - 15);
+        
         doc.text(
-          `Generated by IndAI Security Scanner — Page ${i} of ${pageCount}`,
-          pageWidth / 2,
-          doc.internal.pageSize.getHeight() - 8,
-          { align: "center" }
+          `IndAI Confidential Security Report — Generated ${new Date().toLocaleDateString()}`,
+          margin,
+          pageHeight - 8
+        );
+        doc.text(
+          `Page ${i} of ${pageCount}`,
+          pageWidth - margin,
+          pageHeight - 8,
+          { align: "right" }
         );
       }
 
-      doc.save(`indai-report-${result.scan_id}.pdf`);
+      doc.save(`IndAI_Security_Report_${result.scan_id}.pdf`);
     } catch (err) {
       console.error("PDF generation failed:", err);
     } finally {

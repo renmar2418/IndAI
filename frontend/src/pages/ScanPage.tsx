@@ -10,7 +10,9 @@ import AiSummaryPanel from "../components/AiSummaryPanel";
 import ExportButton from "../components/ExportButton";
 import PdfReportButton from "../components/PdfReportButton";
 import apiService from "../services/api";
+import { saveSummary } from "../utils/summaryCache";
 import type { ScanResult } from "../types";
+import RobotMascot, { type MascotStatus } from "../components/RobotMascot";
 
 export default function ScanPage() {
   const [code, setCode] = useState("");
@@ -30,6 +32,10 @@ export default function ScanPage() {
       const response = await apiService.submitScan(code, language);
       if (response.success) {
         setResult(response.data);
+        // Cache the inline AI summary for instant retrieval on View page
+        if (response.data.ai_summary) {
+          saveSummary(response.data.scan_id, response.data.ai_summary);
+        }
       } else {
         setError(response.error || "Scan failed");
       }
@@ -55,8 +61,18 @@ export default function ScanPage() {
   const hasCorrectedCode = result && result.corrected_code;
   const showExport = hasVulnerabilities && hasCorrectedCode;
 
+  // Determine Mascot Status
+  let mascotStatus: MascotStatus = 'idle';
+  if (isScanning) {
+    mascotStatus = 'scanning';
+  } else if (result) {
+    mascotStatus = result.total_issues === 0 ? 'safe' : 'danger';
+  }
+
   return (
-    <div className="scan-page" id="scan-page">
+    <div className="scan-page relative" id="scan-page">
+      <RobotMascot status={mascotStatus} />
+      
       <div className="scan-header">
         <h1>Security Scan</h1>
         <p className="scan-subtitle">
@@ -92,16 +108,8 @@ export default function ScanPage() {
         <div className="scan-right">
           <ResultsPanel result={result} isLoading={isScanning} />
 
-          {/* AI Summary */}
-          {result && (
-            <AiSummaryPanel
-              scanId={result.scan_id}
-              initialSummary={result.ai_summary || null}
-            />
-          )}
-
           {showExport ? (
-            <div className="export-section" id="export-section">
+            <div className="export-section" id="export-section" style={{ display: 'flex', gap: '16px', marginTop: '16px', marginBottom: '16px' }}>
               <ExportButton
                 code={result!.corrected_code}
                 language={language}
@@ -113,8 +121,8 @@ export default function ScanPage() {
               />
             </div>
           ) : result && result.total_issues === 0 ? (
-            <div className="export-section" id="export-section">
-              <button className="btn-export" disabled title="No vulnerabilities to fix">
+            <div className="export-section" id="export-section" style={{ marginTop: '16px', marginBottom: '16px', display: 'flex', justifyContent: 'center' }}>
+              <button className="btn-export" disabled title="No vulnerabilities to fix" style={{ width: 'auto' }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
                   <polyline points="7,10 12,15 17,10" />
@@ -124,8 +132,19 @@ export default function ScanPage() {
               </button>
             </div>
           ) : null}
+
         </div>
       </div>
+
+      {/* AI Summary (Full Width Bottom) */}
+      {result && (
+        <div className="scan-bottom-full">
+          <AiSummaryPanel
+            scanId={result.scan_id}
+            initialSummary={result.ai_summary || null}
+          />
+        </div>
+      )}
     </div>
   );
 }

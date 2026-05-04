@@ -3,7 +3,7 @@
  * Shows scan statistics, recent scan history with delete + OWASP suggestions.
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import type { DashboardData, OwaspSuggestion, Severity } from "../types";
 import apiService from "../services/api";
@@ -23,9 +23,9 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [deletingId, setDeletingId] = useState<number | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState<{ id: number; language: string; name: string } | null>(null);
-  const [animatingDeleteId, setAnimatingDeleteId] = useState<number | null>(null);
+
+  const pendingDeletesRef = useRef<Record<number, { timer: ReturnType<typeof setTimeout>, scanData: any }>>({});
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<number>>(new Set());
   const [scanNames, setScanNames] = useState<Record<number, string>>(() => {
     try {
       const stored = localStorage.getItem("indai_scan_names");
@@ -39,6 +39,13 @@ export default function DashboardPage() {
   const [suggestionsFor, setSuggestionsFor] = useState<number | null>(null);
   const navigate = useNavigate();
   const { showToast } = useToast();
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(pendingDeletesRef.current).forEach(p => clearTimeout(p.timer));
+    };
+  }, []);
 
   // Initial load (shows loading spinner)
   useEffect(() => {
@@ -74,23 +81,26 @@ export default function DashboardPage() {
   // Auto-refresh every 30s + refresh on tab focus
   useAutoRefresh(silentRefresh, { interval: 30000, refreshOnFocus: true });
 
-  // Show confirmation modal instead of browser confirm()
-  function requestDelete(scanId: number, language: string, customName?: string) {
-    setConfirmDelete({ id: scanId, language, name: customName || `Scan #${scanId}` });
-  }
+  // Inline delete with 3 second undo window
+  function requestDelete(scanId: number, _customName?: string) {
 
-  async function executeDelete() {
-    if (!confirmDelete) return;
-    const scanId = confirmDelete.id;
-    const scanName = confirmDelete.name;
-    setConfirmDelete(null);
+    if (!data) return;
+    const scanToRemove = data.recent_scans.find(s => s.id === scanId);
+    if (!scanToRemove) return;
 
-    setDeletingId(scanId);
-    try {
-      await apiService.deleteScan(scanId);
+    // Add to pending delete set (shows Undo button in row)
+    setPendingDeleteIds(prev => {
+      const next = new Set(prev);
+      next.add(scanId);
+      return next;
+    });
 
-      setAnimatingDeleteId(scanId);
-      setTimeout(() => {
+    // Set timeout to physically delete after 3 seconds
+    const timer = setTimeout(async () => {
+      try {
+        await apiService.deleteScan(scanId);
+        
+        // Physically remove from UI data
         setData((prevData) => {
           if (!prevData) return prevData;
           return {
@@ -102,14 +112,34 @@ export default function DashboardPage() {
             },
           };
         });
-        setAnimatingDeleteId(null);
-      }, 400);
+      } catch (err: any) {
+        showToast(err.response?.data?.error || "Failed to delete scan", "error");
+      } finally {
+        setPendingDeleteIds(prev => {
+          const next = new Set(prev);
+          next.delete(scanId);
+          return next;
+        });
+        delete pendingDeletesRef.current[scanId];
+      }
+    }, 3000);
 
-      showToast(`${scanName} deleted successfully`, "success");
-    } catch (err: any) {
-      showToast(err.response?.data?.error || "Failed to delete scan", "error");
-    } finally {
-      setDeletingId(null);
+    pendingDeletesRef.current[scanId] = { timer, scanData: scanToRemove };
+  }
+
+  function undoDelete(scanId: number) {
+    const pending = pendingDeletesRef.current[scanId];
+    if (pending) {
+      clearTimeout(pending.timer);
+      
+      setPendingDeleteIds(prev => {
+        const next = new Set(prev);
+        next.delete(scanId);
+        return next;
+      });
+
+      delete pendingDeletesRef.current[scanId];
+      showToast(`${scanNames[scanId] || 'Scan'} restored`, "success");
     }
   }
 
@@ -413,7 +443,7 @@ export default function DashboardPage() {
               </thead>
               <tbody>
                 {recent_scans.map((scan) => (
-                  <tr key={scan.id} className={`scan-row ${animatingDeleteId === scan.id ? "deleting-exit" : ""}`}>
+                  <tr key={scan.id} className="scan-row">
                     <td>
                       {editingName === scan.id ? (
                         <div className="scan-name-edit">
@@ -430,7 +460,7 @@ export default function DashboardPage() {
                         </div>
                       ) : (
                         <button className="scan-name-btn" onClick={() => startRename(scan.id)} title="Click to rename">
-                          <span className="scan-name-text">{scanNames[scan.id] || `Scan #${scan.id}`}</span>
+                        <span className="scan-name-text">{scanNames[scan.id] || scan.scan_name || `Scan #${scan.id}`}</span>
                           <svg className="scan-name-pencil" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M17 3a2.83 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
                           </svg>
@@ -488,37 +518,60 @@ export default function DashboardPage() {
                     </td>
                     <td>
                       <div className="scan-actions">
-                        <button
-                          className="btn-view"
-                          onClick={() => navigate(`/scan/${scan.id}`)}
-                        >
-                          View
-                        </button>
-                        <button
-                          className="btn-delete"
-                          onClick={() => requestDelete(scan.id, scan.language, scanNames[scan.id])}
-                          disabled={deletingId === scan.id}
-                          title="Delete scan"
-                        >
-                          {deletingId === scan.id ? (
-                            <span className="scan-spinner" />
-                          ) : (
-                            <>
-                              <svg
-                                width="14"
-                                height="14"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                              >
-                                <polyline points="3,6 5,6 21,6" />
-                                <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-                              </svg>
-                              Delete
-                            </>
-                          )}
-                        </button>
+                        {pendingDeleteIds.has(scan.id) ? (
+                          <button
+                            className="btn-undo-inline"
+                            onClick={() => undoDelete(scan.id)}
+                            style={{
+                              backgroundColor: 'rgba(0, 240, 255, 0.1)',
+                              color: '#00f0ff',
+                              border: '1px solid rgba(0, 240, 255, 0.3)',
+                              padding: '6px 16px',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              fontWeight: 600,
+                              fontSize: '12px',
+                              transition: 'all 0.2s',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px'
+                            }}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <path d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
+                            </svg>
+                            Undo
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              className="btn-view"
+                              onClick={() => navigate(`/scan/${scan.id}`)}
+                            >
+                              View
+                            </button>
+                            <button
+                              className="btn-delete"
+                              onClick={() => requestDelete(scan.id, scanNames[scan.id])}
+                              title="Delete scan"
+                            >
+                              <>
+                                  <svg
+                                    width="14"
+                                    height="14"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                  >
+                                    <polyline points="3,6 5,6 21,6" />
+                                    <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                                  </svg>
+                                  Delete
+                                </>
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -615,43 +668,6 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Confirmation Modal — centered overlay */}
-      {confirmDelete && (
-        <div className="confirm-overlay" id="confirm-delete-modal" onClick={() => setConfirmDelete(null)}>
-          <div className="confirm-card" onClick={(e) => e.stopPropagation()}>
-            <div className="confirm-icon">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.5">
-                <polyline points="3,6 5,6 21,6" />
-                <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-                <line x1="10" y1="11" x2="10" y2="17" />
-                <line x1="14" y1="11" x2="14" y2="17" />
-              </svg>
-            </div>
-            <h3 className="confirm-title">Delete {confirmDelete.name}?</h3>
-            <p className="confirm-desc">
-              This <strong>{confirmDelete.language}</strong> scan will be permanently removed. This action cannot be undone.
-            </p>
-            <div className="confirm-actions">
-              <button
-                className="confirm-btn-keep"
-                onClick={() => setConfirmDelete(null)}
-              >
-                No, I keep it
-              </button>
-              <button
-                className="confirm-btn-delete"
-                onClick={executeDelete}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="3,6 5,6 21,6" />
-                  <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-                </svg>
-                Yes, delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

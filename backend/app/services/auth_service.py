@@ -94,3 +94,60 @@ class AuthService:
         if response.status_code == 200:
             return response.json()
         return None
+
+    # ── Facebook OAuth ──────────────────────────────────────────
+
+    FACEBOOK_AUTH_URL = "https://www.facebook.com/v19.0/dialog/oauth"
+    FACEBOOK_TOKEN_URL = "https://graph.facebook.com/v19.0/oauth/access_token"
+    FACEBOOK_USERINFO_URL = "https://graph.facebook.com/me"
+
+    @staticmethod
+    def get_facebook_auth_url():
+        """Build the Facebook OAuth authorization URL."""
+        params = {
+            "client_id": current_app.config["FACEBOOK_APP_ID"],
+            "redirect_uri": current_app.config["FACEBOOK_REDIRECT_URI"],
+            "scope": "email,public_profile",
+            "response_type": "code",
+            "state": "indai_fb_auth",
+        }
+        query_string = "&".join(f"{k}={v}" for k, v in params.items())
+        return f"{AuthService.FACEBOOK_AUTH_URL}?{query_string}"
+
+    @staticmethod
+    def exchange_facebook_code_for_token(code):
+        """
+        Exchange a Facebook authorization code for an access token.
+
+        Returns:
+            dict or None: Token response from Facebook, or None on failure.
+        """
+        params = {
+            "client_id": current_app.config["FACEBOOK_APP_ID"],
+            "client_secret": current_app.config["FACEBOOK_APP_SECRET"],
+            "redirect_uri": current_app.config["FACEBOOK_REDIRECT_URI"],
+            "code": code,
+        }
+        response = requests.get(AuthService.FACEBOOK_TOKEN_URL, params=params, timeout=10)
+        if response.status_code == 200:
+            return response.json()
+        return None
+
+    @staticmethod
+    def get_facebook_user_info(access_token):
+        """
+        Fetch user profile information from Facebook.
+
+        Returns:
+            dict or None: User info containing id, name, email, picture.
+        """
+        params = {
+            "fields": "id,name,email,picture.type(large)",
+            "access_token": access_token,
+        }
+        response = requests.get(
+            AuthService.FACEBOOK_USERINFO_URL, params=params, timeout=10
+        )
+        if response.status_code == 200:
+            return response.json()
+        return None

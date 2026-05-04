@@ -1,0 +1,25 @@
+<svg width="600" height="160" viewBox="0 0 600 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="brand-grad" x1="20" y1="20" x2="140" y2="140" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00F0FF"/>
+      <stop offset="1" stop-color="#A855F7"/>
+    </linearGradient>
+    <filter id="soft-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  
+  <!-- Icon Section -->
+  <g transform="translate(20, 10) scale(0.6)">
+    <path d="M128 20L40 70V186L128 236L216 186V70L128 20Z" stroke="url(#brand-grad)" stroke-width="8" stroke-linejoin="round" filter="url(#soft-glow)"/>
+    <path d="M128 50L66 85V171L128 206L190 171V85L128 50Z" fill="url(#brand-grad)" fill-opacity="0.05" stroke="url(#brand-grad)" stroke-width="2" stroke-dasharray="8 4"/>
+    <path d="M128 80L90 160H105L128 110L151 160H166L128 80Z" fill="url(#brand-grad)"/>
+    <circle cx="128" cy="132" r="14" fill="#020617" stroke="url(#brand-grad)" stroke-width="3"/>
+    <circle cx="128" cy="132" r="5" fill="url(#brand-grad)"/>
+  </g>
+  
+  <!-- Text Section -->
+  <text x="180" y="105" fill="#E2E8F0" font-family="Inter, sans-serif" font-size="72" font-weight="800" letter-spacing="-2">Ind<tspan fill="url(#brand-grad)">AI</tspan></text>
+  <text x="180" y="135" fill="#64748B" font-family="Inter, sans-serif" font-size="18" font-weight="500" letter-spacing="4">INTELLIGENT DETECTION</text>
+</svg>

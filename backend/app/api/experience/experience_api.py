@@ -6,6 +6,7 @@ Aggregates Process API responses and formats them specifically
 for the React frontend. This layer is the ONLY layer the frontend calls.
 """
 
+import logging
 from flask import Blueprint, jsonify, request, g
 from app.middleware.auth_middleware import login_required
 from app.models.scan import Scan
@@ -40,8 +41,8 @@ def submit_scan():
     if not source_code.strip():
         return jsonify({"error": "Code cannot be empty"}), 400
 
-    if len(source_code) > 100000:
-        return jsonify({"error": "Code exceeds maximum size (100KB)"}), 400
+    if len(source_code) > 50000000:
+        return jsonify({"error": "Code exceeds maximum size (50MB)"}), 400
 
     # Create scan record
     scan = Scan.create(
@@ -99,10 +100,11 @@ def submit_scan():
         }), 422
 
     except Exception as e:
+        logging.error(f"Scan execution failed: {str(e)}", exc_info=True)
         scan.update(status=Scan.STATUS_FAILED)
         return jsonify({
             "success": False,
-            "error": f"Scan failed: {str(e)}",
+            "error": "The security scan encountered an internal error. Our team has been notified.",
             "scan_id": scan.id,
         }), 500
 
@@ -486,9 +488,10 @@ def upload_file():
         }), 422
 
     except Exception as e:
+        logging.error(f"File upload processing failed: {str(e)}", exc_info=True)
         return jsonify({
             "success": False,
-            "error": f"Failed to process file: {str(e)}",
+            "error": "Failed to process the uploaded file due to an internal error.",
         }), 500
 
 
@@ -524,7 +527,8 @@ def agent_feedback():
         return jsonify({"success": True, "message": "Feedback saved"}), 201
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        logging.error(f"Agent feedback storage failed: {str(e)}", exc_info=True)
+        return jsonify({"error": "Failed to save feedback due to a system error."}), 500
 
 
 @experience_bp.route("/agent/chat", methods=["POST"])
@@ -548,3 +552,33 @@ def agent_chat():
         "success": True,
         "data": response_data
     }), 200
+
+
+@experience_bp.route("/share", methods=["POST"])
+def create_snippet():
+    """Experience API: Create a shareable snippet (public, optional auth)."""
+    from app.api.process.share_process import create_shareable_link
+    return create_shareable_link()
+
+
+@experience_bp.route("/share/<string:short_id>", methods=["GET"])
+def get_snippet_metadata(short_id):
+    """Experience API: Get snippet metadata only (no code, no read consumed)."""
+    from app.api.process.share_process import get_snippet_metadata
+    return get_snippet_metadata(short_id)
+
+
+@experience_bp.route("/share/<string:short_id>/reveal", methods=["POST"])
+@limiter.limit("10 per minute")
+def reveal_snippet(short_id):
+    """Experience API: Reveal snippet code (consumes a read). Rate-limited to prevent password brute-force."""
+    from app.api.process.share_process import reveal_snippet
+    return reveal_snippet(short_id)
+
+
+@experience_bp.route("/share/revoke/<string:revoke_token>", methods=["DELETE"])
+def revoke_snippet(revoke_token):
+    """Experience API: Sender-initiated snippet deletion via private revoke token."""
+    from app.api.process.share_process import revoke_snippet
+    return revoke_snippet(revoke_token)
+

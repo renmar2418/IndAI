@@ -46,6 +46,7 @@ class Scan(BaseModel):
         return {
             "id": self.id,
             "user_id": self.user_id,
+            "scan_name": self.scan_name,
             "original_code": self.original_code,
             "corrected_code": self.corrected_code,
             "language": self.language,
@@ -55,10 +56,22 @@ class Scan(BaseModel):
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
 
+    @property
+    def scan_name(self):
+        """Generate a human-readable name for the scan."""
+        if self.original_code and '[GitHub Batch Scan]' in self.original_code:
+            import re
+            match = re.search(r'Repository:\s*([^\n]+)', self.original_code)
+            if match:
+                repo_name = match.group(1).strip()
+                return repo_name.split('/')[-1] if '/' in repo_name else repo_name
+        return f"Scan #{self.id}"
+
     def to_summary_dict(self):
         """Lightweight summary for dashboard listings."""
         return {
             "id": self.id,
+            "scan_name": self.scan_name,
             "language": self.language,
             "status": self.status,
             "vulnerability_count": self.vulnerability_count,

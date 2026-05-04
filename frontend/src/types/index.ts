@@ -12,7 +12,10 @@ export interface User {
   email: string;
   display_name: string;
   avatar_url: string | null;
+  role: string;
   created_at: string;
+  username?: string;
+  phone_number?: string;
 }
 
 export interface Scan {
@@ -25,6 +28,7 @@ export interface Scan {
   vulnerability_count: number;
   created_at: string;
   updated_at: string;
+  scan_name?: string;
 }
 
 export interface ScanSummary {
@@ -33,6 +37,7 @@ export interface ScanSummary {
   status: ScanStatus;
   vulnerability_count: number;
   created_at: string;
+  scan_name?: string;
 }
 
 export type ScanStatus = "pending" | "scanning" | "completed" | "failed";
@@ -50,6 +55,7 @@ export interface Vulnerability {
   column: number | null;
   code_snippet: string;
   suggested_fix: string;
+  accurate_fix?: string;
   owasp_category: string;
   created_at: string;
 }

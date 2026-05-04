@@ -3,6 +3,7 @@ IndAI — Rule Factory (Factory Pattern)
 Demonstrates: Factory Pattern, Encapsulation
 
 Dynamically discovers and instantiates all security rules.
+Enhanced with engine-type tagging for the hybrid pipeline.
 """
 
 from app.engine.rules.eval_usage import EvalUsageRule
@@ -25,6 +26,22 @@ from app.engine.rules.python_sqli import PythonSqlInjectionRule
 from app.engine.rules.python_pickle import PythonPickleRule
 from app.engine.rules.react_dangerously_set import ReactDangerouslySetRule
 from app.engine.rules.dependency_scan import DependencyScanRule
+from app.engine.rules.php_security import UniversalSecurityRule
+
+
+# Engine-type tags for grouping rules in the hybrid pipeline
+_ENGINE_TAGS = {
+    "HardcodedSecretsRule": "secret",
+    "DependencyScanRule": "sca",
+    "EvalUsageRule": "sast",
+    "PythonEvalRule": "sast",
+    "PythonPickleRule": "sast",
+    "InsecureDeserializationRule": "sast",
+    "CommandInjectionRule": "sast",
+    "SQLInjectionRule": "sast",
+    "PythonSqlInjectionRule": "sast",
+    "UniversalSecurityRule": "regex",
+}
 
 
 class RuleFactory:
@@ -33,6 +50,9 @@ class RuleFactory:
 
     Centralizes rule creation so the Scanner doesn't need to know
     about individual rule implementations.
+
+    Enhanced: Each rule now carries an `engine_type` tag for the
+    hybrid pipeline (sast, secret, sca, regex).
     """
 
     # Registry of all available rule classes
@@ -57,11 +77,17 @@ class RuleFactory:
         PythonPickleRule,
         ReactDangerouslySetRule,
         DependencyScanRule,
+        UniversalSecurityRule,
     ]
 
     def __init__(self):
-        """Instantiate all registered rules."""
-        self._rules = [RuleClass() for RuleClass in self._rule_classes]
+        """Instantiate all registered rules and tag with engine type."""
+        self._rules = []
+        for RuleClass in self._rule_classes:
+            rule = RuleClass()
+            # Attach engine-type tag (defaults to "regex" for pattern-based rules)
+            rule.engine_type = _ENGINE_TAGS.get(RuleClass.__name__, "regex")
+            self._rules.append(rule)
 
     def get_all_rules(self):
         """Return all instantiated rules."""
@@ -78,6 +104,13 @@ class RuleFactory:
             if owasp_category.lower() in rule.owasp_category.lower()
         ]
 
+    def get_by_engine(self, engine_type):
+        """Filter rules by engine type (sast, secret, sca, regex)."""
+        return [
+            rule for rule in self._rules
+            if getattr(rule, "engine_type", "regex") == engine_type
+        ]
+
     def get_by_id(self, rule_id):
         """Find a specific rule by its ID."""
         for rule in self._rules:
@@ -91,4 +124,10 @@ class RuleFactory:
 
     def get_all_metadata(self):
         """Return metadata for all rules (for frontend display)."""
-        return [rule.get_metadata() for rule in self._rules]
+        metadata_list = []
+        for rule in self._rules:
+            meta = rule.get_metadata()
+            meta["engine_type"] = getattr(rule, "engine_type", "regex")
+            metadata_list.append(meta)
+        return metadata_list
+

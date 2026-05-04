@@ -12,6 +12,7 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
+import { useNavigate } from "react-router-dom";
 import type { User } from "../types";
 import apiService from "../services/api";
 
@@ -20,8 +21,10 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: () => void;
+  loginWithCredentials: (identifier: string, password: string) => Promise<void>;
+  register: (data: any) => Promise<void>;
   logout: () => Promise<void>;
-  setTokenAndFetch: (token: string) => Promise<void>;
+  setTokenAndFetch: (token: string) => Promise<User | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,6 +32,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
 
   const checkAuth = useCallback(async () => {
     const token = localStorage.getItem("indai_token");
@@ -85,22 +89,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
   }, []);
 
+  const loginWithCredentials = useCallback(async (identifier: string, password: string) => {
+    const { token, user: userData } = await apiService.loginWithCredentials(identifier, password);
+    localStorage.setItem("indai_token", token);
+    setUser(userData);
+  }, []);
+
+  const register = useCallback(async (data: any) => {
+    setIsLoading(true);
+    try {
+      const { token, user: userData } = await apiService.register(data);
+      localStorage.setItem("indai_token", token);
+      setUser(userData);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   const logout = useCallback(async () => {
     try {
       await apiService.logout();
     } finally {
       setUser(null);
       localStorage.removeItem("indai_token");
+      navigate("/");
     }
-  }, []);
+  }, [navigate]);
 
-  const setTokenAndFetch = useCallback(async (token: string) => {
+  const setTokenAndFetch = useCallback(async (token: string): Promise<User | null> => {
     localStorage.setItem("indai_token", token);
     setIsLoading(true);
+    let fetchedUser = null;
     try {
       const response = await apiService.getAuthStatus();
       if (response.authenticated) {
         setUser(response.user);
+        fetchedUser = response.user;
       }
     } catch {
       localStorage.removeItem("indai_token");
@@ -108,6 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
+    return fetchedUser;
   }, []);
 
   return (
@@ -117,6 +142,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: !!user,
         isLoading,
         login,
+        loginWithCredentials,
+        register,
         logout,
         setTokenAndFetch,
       }}

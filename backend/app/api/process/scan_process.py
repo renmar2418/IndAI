@@ -13,6 +13,7 @@ Orchestrates the complete scanning pipeline:
 
 from flask import Blueprint, jsonify, request, g
 from app.middleware.auth_middleware import login_required
+from app.extensions import limiter
 from app.models.scan import Scan
 from app.models.vulnerability import Vulnerability
 from app.engine.scanner import Scanner
@@ -101,12 +102,65 @@ def analyze_code():
         }), 422
 
     except Exception as e:
-        # Mark scan as failed
         scan.update_status(Scan.STATUS_FAILED)
         return jsonify({
             "error": "Scan failed",
             "message": str(e),
             "scan_id": scan.id,
+        }), 500
+
+
+@scan_process_bp.route("/demo-scan", methods=["POST"])
+@limiter.limit("5 per day")
+def demo_scan():
+    """
+    Process API: Unauthenticated Demo Scan.
+    Rate limited to 5 per day per IP.
+    Does NOT save to database to prevent bloat.
+    """
+    data = request.get_json()
+
+    if not data or "code" not in data:
+        return jsonify({"error": "Missing 'code' field in request body"}), 400
+
+    source_code = data["code"]
+    language = data.get("language", "javascript")
+
+    if not source_code.strip():
+        return jsonify({"error": "Code cannot be empty"}), 400
+
+    if len(source_code) > 10000:  # Stricter 10KB limit for demo
+        return jsonify({"error": "Code exceeds maximum demo size (10KB)"}), 400
+
+    try:
+        # Run the security scanner directly without DB overhead
+        results = _scanner.scan(source_code, language)
+
+        # Return formatted results directly
+        return jsonify({
+            "data": {
+                "scan_id": "demo-scan",
+                "status": "completed",
+                "original_code": source_code,
+                "corrected_code": results["corrected_code"],
+                "language": language,
+                "findings": results["findings"],
+                "summary": results["summary"],
+                "total_issues": results["total_issues"],
+            }
+        }), 200
+
+    except ValueError as ve:
+        # Input validation error (not valid code)
+        return jsonify({
+            "error": "invalid_code",
+            "message": str(ve),
+        }), 422
+
+    except Exception as e:
+        return jsonify({
+            "error": "Scan failed",
+            "message": str(e),
         }), 500
 
 

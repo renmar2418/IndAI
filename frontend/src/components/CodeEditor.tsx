@@ -95,6 +95,8 @@ export default function CodeEditor({
   isScanning,
 }: CodeEditorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const lineNumbersRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [importInfo, setImportInfo] = useState("");
@@ -264,6 +266,12 @@ export default function CodeEditor({
     }
   };
 
+  const handleScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
+    if (lineNumbersRef.current) {
+      lineNumbersRef.current.scrollTop = e.currentTarget.scrollTop;
+    }
+  };
+
   return (
     <div className="code-editor" id="code-editor">
       <div className="editor-toolbar" id="editor-toolbar">
@@ -279,7 +287,6 @@ export default function CodeEditor({
             onChange={(e) => onLanguageChange(e.target.value)}
             className="language-select"
             id="language-selector"
-            style={{ padding: "6px 24px 6px 12px", fontSize: "0.85rem", borderRadius: "6px" }}
           >
             {LANGUAGES.map((lang) => (
               <option key={lang.value} value={lang.value}>
@@ -294,7 +301,7 @@ export default function CodeEditor({
             onClick={handleGithubClick}
             disabled={isUploading || isScanning}
             className="btn-import"
-            style={{ background: "#24292e", border: "1px solid #444d56", padding: "6px 12px", display: "flex", alignItems: "center", gap: "6px", fontSize: "0.85rem", borderRadius: "6px", cursor: "pointer", color: "#e1e4e8" }}
+            style={{ background: "#24292e", border: "1px solid #444d56", color: "#e1e4e8" }}
             title="Fetch from GitHub URL"
           >
             {isUploading ? (
@@ -313,7 +320,6 @@ export default function CodeEditor({
             className="btn-import"
             id="import-button"
             title="Import file"
-            style={{ padding: "6px 12px", display: "flex", alignItems: "center", gap: "6px", fontSize: "0.85rem", borderRadius: "6px", cursor: "pointer" }}
           >
             {isUploading ? (
               <span className="scan-spinner" />
@@ -336,31 +342,13 @@ export default function CodeEditor({
             id="file-input"
           />
 
-          {/* Clear Code Button — only visible when code exists */}
-          {code.trim() && (
-            <button
-              onClick={() => setCode("")}
-              disabled={isScanning}
-              className="btn-clear-code"
-              id="clear-code-button"
-              title="Clear all code"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="3,6 5,6 21,6" />
-                <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-                <line x1="10" y1="11" x2="10" y2="17" />
-                <line x1="14" y1="11" x2="14" y2="17" />
-              </svg>
-              Clear
-            </button>
-          )}
+
 
           <button
             onClick={onScan}
             disabled={isScanning || !code.trim()}
             className={`btn-scan ${isScanning ? "scanning" : ""}`}
             id="scan-button"
-            style={{ padding: "6px 16px", fontSize: "0.9rem", display: "flex", alignItems: "center", gap: "6px", borderRadius: "6px" }}
           >
             {isScanning ? (
               <>
@@ -434,7 +422,7 @@ export default function CodeEditor({
       {/* Language Detection Suggestion (Removed since it auto-switches) */}
 
       <div className="editor-body">
-        <div className="line-numbers" aria-hidden="true">
+        <div className="line-numbers" aria-hidden="true" ref={lineNumbersRef}>
           {lineNumbers.map((num) => (
             <span key={num} className="line-number">
               {num}
@@ -442,9 +430,11 @@ export default function CodeEditor({
           ))}
         </div>
         <textarea
+          ref={textareaRef}
           value={code}
           onChange={(e) => handleCodeChange(e.target.value)}
           onPaste={handlePaste}
+          onScroll={handleScroll}
           className="code-textarea"
           id="code-input"
           placeholder={"// Paste your code here or click Import to upload a file\n\n// Supported file types:\n// 📄 Code: .py, .js, .ts, .java, .cpp, .go, .rb, .php\n// 📝 Text: .txt, .md, .json, .xml, .yaml, .csv\n// 📑 Docs: .pdf, .docx, .pptx, .xlsx\n// 🖼️ Images: .png, .jpg, .jpeg, .webp (Text will be extracted via OCR)\n\n// Example vulnerable code:\n// eval(userInput)\n// password = 'admin123'\n// os.system('rm -rf ' + user_data)"}
@@ -455,12 +445,31 @@ export default function CodeEditor({
       </div>
 
       <div className="editor-footer">
-        <span className="editor-info">
-          Lines: {lineCount} | Characters: {code.length}
-        </span>
-        <span className="editor-info">
-          Language: {LANGUAGES.find((l) => l.value === language)?.label}
-        </span>
+        <div className="footer-left">
+          <span className="editor-info">
+            Lines: {lineCount} | Characters: {code.length}
+          </span>
+        </div>
+        
+        <div className="footer-right">
+          <span className="editor-info">
+            Language: {LANGUAGES.find((l) => l.value === language)?.label}
+          </span>
+          {code.trim() && (
+            <button
+              onClick={() => setCode("")}
+              disabled={isScanning}
+              className="footer-btn-clear"
+              id="clear-code-button"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="3,6 5,6 21,6" />
+                <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+              </svg>
+              Clear Code
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

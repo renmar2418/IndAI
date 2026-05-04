@@ -14,20 +14,38 @@ class Config:
 
     SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-me")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50MB upload limit
 
     # Google OAuth
     GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
     GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
     GOOGLE_REDIRECT_URI = os.getenv(
         "GOOGLE_REDIRECT_URI",
-        "http://localhost:5000/api/v1/process/auth/google/callback",
+        "https://indai-webapp-d1857db81932.herokuapp.com/api/v1/process/auth/google/callback",
     )
+
+    # Facebook OAuth
+    FACEBOOK_APP_ID = os.getenv("FACEBOOK_APP_ID", "")
+    FACEBOOK_APP_SECRET = os.getenv("FACEBOOK_APP_SECRET", "")
+    FACEBOOK_REDIRECT_URI = os.getenv(
+        "FACEBOOK_REDIRECT_URI",
+        "https://indai-webapp-d1857db81932.herokuapp.com/api/v1/process/auth/facebook/callback",
+    )
+
+    # Superadmin
+    SUPERADMIN_EMAIL = os.getenv("SUPERADMIN_EMAIL", "")
+
+    # Hybrid AI Verification
+    GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+    MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY", "")
+    AI_VERIFY_ENABLED = os.getenv("AI_VERIFY_ENABLED", "true").lower() == "true"
 
     # Frontend URLs (comma-separated for multiple origins)
     FRONTEND_URLS = os.getenv(
-        "FRONTEND_URLS", "http://localhost:5173,https://ind-ai-five.vercel.app"
+        "FRONTEND_URLS", "https://ind-ai-five.vercel.app,https://www.renmar.dev,http://localhost:5173,http://localhost:5174"
     ).split(",")
-    FRONTEND_URL = FRONTEND_URLS[0]
+    FRONTEND_URL = os.getenv("FRONTEND_URL", FRONTEND_URLS[0])
 
     # Database
     SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", "sqlite:///indai.db")

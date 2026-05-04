@@ -30,8 +30,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const showToast = useCallback((message: string, type: ToastType = "info", duration = 3500) => {
-    const id = crypto.randomUUID();
-    setToasts((prev) => [...prev, { id, message, type, duration }]);
+    setToasts((prev) => {
+      // Prevent duplicate toasts from stacking (improves UX and handles StrictMode double-fires)
+      if (prev.some((t) => t.message === message && t.type === type)) {
+        return prev;
+      }
+      const id = crypto.randomUUID();
+      return [...prev, { id, message, type, duration }];
+    });
   }, []);
 
   const removeToast = useCallback((id: string) => {

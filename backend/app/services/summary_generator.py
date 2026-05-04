@@ -257,8 +257,37 @@ class SummaryGenerator:
         else:
             risk = "low"
 
+        # ---------------------------------------------------------
+        # TRUE GENERATIVE AI INTEGRATION
+        # ---------------------------------------------------------
+        try:
+            from app.engine.ai_provider import AIProviderChain
+            import logging
+            
+            provider_chain = AIProviderChain()
+            if provider_chain.has_providers:
+                # Format findings for the prompt context
+                findings_text = ""
+                for i, f in enumerate(findings, 1):
+                    findings_text += f"{i}. [{f.get('severity', 'info').upper()}] {f.get('title', 'Unknown')} (Rule: {f.get('rule_id', 'Unknown')})\n"
+                    findings_text += f"   Description: {f.get('description', 'None')}\n"
+                    if f.get('code_snippet'):
+                        findings_text += f"   Code snippet: `{f.get('code_snippet', '').strip()}`\n\n"
+                
+                lang_name = cls.SUPPORTED_LANGUAGES.get(lang, "English")
+                
+                # Request the executive abstract
+                ai_text = provider_chain.generate_summary(findings_text, lang_name)
+            else:
+                # Fallback to statically templated summary
+                ai_text = "\n".join(parts)
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"Failed to generate true AI summary: {e}")
+            ai_text = "\n".join(parts)
+
         return {
-            "summary_text": "\n".join(parts),
+            "summary_text": ai_text,
             "language": cls.SUPPORTED_LANGUAGES.get(lang, "English"),
             "language_code": lang,
             "severity_breakdown": {sev_labels.get(k, k): v for k, v in severity_counts.items()},

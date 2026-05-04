@@ -1,13 +1,14 @@
 /**
  * IndAI — Protected Route Component
  * Guards routes that require authentication.
+ * Supports both children mode and Outlet mode (for layout routes).
  */
 
-import { Navigate } from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 interface ProtectedRouteProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
@@ -32,5 +33,7 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <Navigate to="/" replace />;
   }
 
-  return <>{children}</>;
+  // If used as a layout route (no children), render Outlet
+  // If used as a wrapper (with children), render children
+  return children ? <>{children}</> : <Outlet />;
 }

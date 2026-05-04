@@ -1,7 +1,7 @@
 /**
  * IndAI — Scan Detail Page
  * Shows detailed view of a past scan with original vs corrected code
- * and full vulnerability breakdown.
+ * and a mini AI summary (2 sentences).
  */
 
 import { useState, useEffect } from "react";
@@ -9,6 +9,7 @@ import { useParams, Link } from "react-router-dom";
 import type { ScanDetailData, Severity } from "../types";
 import ExportButton from "../components/ExportButton";
 import apiService from "../services/api";
+import { getSummary, saveSummary } from "../utils/summaryCache";
 
 const SEVERITY_COLORS: Record<Severity, string> = {
   critical: "#ef4444",
@@ -18,12 +19,28 @@ const SEVERITY_COLORS: Record<Severity, string> = {
   info: "#6b7280",
 };
 
+const RISK_COLORS: Record<string, string> = {
+  critical: "#ef4444",
+  high: "#f97316",
+  medium: "#eab308",
+  low: "#3b82f6",
+  safe: "#22c55e",
+};
+
 export default function ScanDetailPage() {
   const { scanId } = useParams<{ scanId: string }>();
   const [data, setData] = useState<ScanDetailData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<"original" | "corrected">("original");
+
+  // Mini AI Summary state
+  const [miniSummary, setMiniSummary] = useState<{
+    summary_text: string;
+    risk_level: string;
+    language: string;
+  } | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
 
   useEffect(() => {
     if (scanId) {
@@ -37,12 +54,40 @@ export default function ScanDetailPage() {
       const response = await apiService.getScanDetail(id);
       if (response.success) {
         setData(response.data);
+
+        // Load AI summary: check local cache first, then fall back to API
+        const cached = getSummary(id);
+        if (cached) {
+          setMiniSummary(cached);
+        } else {
+          setSummaryLoading(true);
+          try {
+            const summaryRes = await apiService.getScanSummary(id, "en");
+            if (summaryRes.success) {
+              setMiniSummary(summaryRes.data);
+              saveSummary(id, summaryRes.data);
+            }
+          } catch {
+            // Silently fail — mini summary is optional
+          } finally {
+            setSummaryLoading(false);
+          }
+        }
       }
     } catch (err: any) {
       setError(err.response?.data?.error || "Failed to load scan details");
     } finally {
       setLoading(false);
     }
+  }
+
+  // Extract first 4 sentences from the AI summary
+  function getMiniText(fullText: string): string {
+    const sentences = fullText
+      .replace(/\n+/g, " ")
+      .split(/(?<=[.!?])\s+/)
+      .filter((s) => s.trim().length > 0);
+    return sentences.slice(0, 4).join(" ");
   }
 
   if (loading) {
@@ -71,7 +116,7 @@ export default function ScanDetailPage() {
     );
   }
 
-  const { scan, vulnerabilities, summary } = data;
+  const { scan, summary } = data;
 
   return (
     <div className="detail-page" id="scan-detail-page">
@@ -83,7 +128,7 @@ export default function ScanDetailPage() {
           Back to Dashboard
         </Link>
         <div className="detail-title-row">
-          <h1>Scan #{scan.id}</h1>
+          <h1>{scan.scan_name || `Scan #${scan.id}`}</h1>
           <span className={`status-badge ${scan.status}`}>{scan.status}</span>
         </div>
         <div className="detail-meta">
@@ -92,7 +137,15 @@ export default function ScanDetailPage() {
           <span>
             Date:{" "}
             <strong>
-              {new Date(scan.created_at).toLocaleString()}
+              {new Date(scan.created_at.endsWith?.('Z') ? scan.created_at : scan.created_at + 'Z').toLocaleString("en-PH", {
+                timeZone: "Asia/Manila",
+                month: "long",
+                day: "numeric",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+              })}
             </strong>
           </span>
           <span>•</span>
@@ -156,47 +209,61 @@ export default function ScanDetailPage() {
         </pre>
       </div>
 
-      {/* Vulnerability Details */}
-      <div className="detail-vulns" id="detail-vulnerabilities">
-        <h2>Vulnerabilities ({vulnerabilities.length})</h2>
-        {vulnerabilities.map((vuln, i) => (
-          <div
-            key={i}
-            className="detail-vuln-card"
-            style={{ borderLeftColor: SEVERITY_COLORS[vuln.severity] || "#6b7280" }}
-          >
-            <div className="detail-vuln-header">
+      {/* Mini AI Summary — replaces the long vulnerability list */}
+      <div className="mini-ai-summary" id="mini-ai-summary">
+        <div className="mini-ai-header">
+          <div className="mini-ai-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a855f7" strokeWidth="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5z" />
+              <path d="M2 17l10 5 10-5" />
+              <path d="M2 12l10 5 10-5" />
+            </svg>
+            <span>AI Security Insight</span>
+            {miniSummary && (
               <span
-                className="severity-tag"
+                className="ai-risk-badge"
                 style={{
-                  backgroundColor: `${SEVERITY_COLORS[vuln.severity]}18`,
-                  color: SEVERITY_COLORS[vuln.severity],
+                  background: `${RISK_COLORS[miniSummary.risk_level] || "#6b7280"}20`,
+                  color: RISK_COLORS[miniSummary.risk_level] || "#6b7280",
                 }}
               >
-                {vuln.severity.toUpperCase()}
+                {miniSummary.risk_level.toUpperCase()}
               </span>
-              <h3>{vuln.title}</h3>
-              {vuln.line_number && (
-                <span className="line-tag">Line {vuln.line_number}</span>
-              )}
-            </div>
-            <p className="detail-vuln-desc">{vuln.description}</p>
-            {vuln.owasp_category && (
-              <span className="owasp-tag">{vuln.owasp_category}</span>
-            )}
-            {vuln.code_snippet && (
-              <pre className="code-block vulnerable">
-                <code>{vuln.code_snippet}</code>
-              </pre>
-            )}
-            {vuln.suggested_fix && (
-              <pre className="code-block fixed">
-                <code>{vuln.suggested_fix}</code>
-              </pre>
             )}
           </div>
-        ))}
+          <span className="mini-ai-issues">
+            {scan.vulnerability_count} issue{scan.vulnerability_count !== 1 ? "s" : ""} detected
+          </span>
+        </div>
+
+        <div className="mini-ai-body">
+          {summaryLoading ? (
+            <div className="mini-ai-loading">
+              <span className="scan-spinner" />
+              <span>Generating insight...</span>
+            </div>
+          ) : miniSummary ? (
+            <p className="mini-ai-text">
+              {getMiniText(miniSummary.summary_text).split(/([\s]+)/).map((word, j) => {
+                const cleanWord = word.trim().replace(/[.,!?;:]/g, "");
+                if (cleanWord.length >= 3 && cleanWord === cleanWord.toUpperCase() && /[A-Z]/.test(cleanWord)) {
+                  return <strong key={j}>{word}</strong>;
+                }
+                return word;
+              })}
+            </p>
+          ) : scan.vulnerability_count === 0 ? (
+            <p className="mini-ai-text" style={{ color: "var(--accent-green)" }}>
+              No security issues were detected. This code appears to follow safe coding practices.
+            </p>
+          ) : (
+            <p className="mini-ai-text" style={{ color: "var(--text-muted)" }}>
+              AI summary is not available for this scan.
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
 }
+
