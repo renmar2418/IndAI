@@ -18,7 +18,10 @@ from app.extensions import db
 
 # Initialize Redis Queue
 redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
-redis_conn = Redis.from_url(redis_url)
+if redis_url.startswith("rediss://"):
+    redis_conn = Redis.from_url(redis_url, ssl_cert_reqs=None)
+else:
+    redis_conn = Redis.from_url(redis_url)
 q = Queue('default', connection=redis_conn)
 
 def enqueue_batch_scan(user_id, repo_name, files):
