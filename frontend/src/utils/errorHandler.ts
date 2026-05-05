@@ -30,13 +30,22 @@ export const getUserFriendlyErrorMessage = (error: any): string => {
         message = "The request was invalid. Please check your input.";
         break;
       case 401:
-        message = "Your session has expired. Please log in again.";
+        if (error.config?.url?.includes("github")) {
+          message = "Please connect your GitHub account to access your repositories.";
+        } else {
+          message = "Your session has expired. Please log in again.";
+        }
         break;
       case 403:
         message = "You don't have permission to perform this action.";
         break;
       case 404:
-        message = "The requested resource could not be found.";
+        // Humanize GitHub private repo errors
+        if (error.config?.url?.includes("github")) {
+          message = "We couldn't find this repository. If it's a private repository, please click 'Connect GitHub' to allow IndAI to scan it securely.";
+        } else {
+          message = "The requested resource could not be found.";
+        }
         break;
       case 429:
         // Check for specific demo limit message which is already friendly
