@@ -17,4 +17,6 @@ flask-limiter==3.12
 flask-talisman==1.1.0
 groq>=0.4.0
 mistralai>=1.0.0
-
+redis==5.0.3
+rq==1.16.1
+psutil==5.9.8
