@@ -435,7 +435,8 @@ def get_system_health():
     db_status = "Healthy"
     try:
         # Ping DB
-        db.session.execute("SELECT 1")
+        from sqlalchemy import text
+        db.session.execute(text("SELECT 1"))
     except OperationalError:
         db_status = "Unreachable"
         
