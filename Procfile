@@ -1,1 +1,2 @@
 web: gunicorn --pythonpath backend "app:create_app()" --bind 0.0.0.0:$PORT --workers 1 --threads 2
+worker: cd backend && rq worker -u $REDIS_URL default
