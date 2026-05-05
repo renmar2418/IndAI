@@ -17,7 +17,7 @@ import type {
 } from "../types";
 import { getUserFriendlyErrorMessage } from "../utils/errorHandler";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_BASE_URL = (import.meta.env.VITE_API_URL || "http://localhost:5000").replace(/\/$/, "");
 
 class ApiService {
   private client: AxiosInstance;
