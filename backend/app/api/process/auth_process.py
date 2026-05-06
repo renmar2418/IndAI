@@ -273,15 +273,22 @@ def verify_otp():
         }), 401
 
     # ── Code is valid — find or create user ──
-    user = User.find_by_email(email)
-
-    if not user:
-        # New user registration (OTP-verified, no password needed)
-        display_name = email.split("@")[0]
-        user = User.create(
-            email=email,
-            display_name=display_name,
-        )
+    try:
+        user = User.find_by_email(email)
+        if not user:
+            # New user registration (OTP-verified)
+            display_name = email.split("@")[0]
+            user = User.find_or_create(
+                email=email,
+                display_name=display_name
+            )
+    except Exception as e:
+        logger.error(f"Database error during user creation: {e}", exc_info=True)
+        return jsonify({
+            "success": False,
+            "error_code": "DATABASE_ERROR",
+            "message": f"Server database error: {str(e)}"
+        }), 500
 
     # ── Cleanup: delete the used OTP ──
     otp_record.delete()
