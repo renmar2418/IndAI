@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import apiService from "../services/api";
 import { useToast } from "../components/ToastProvider";
 import type { User } from "../types";
+import ConfirmationModal from "../components/ConfirmationModal";
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -18,6 +19,21 @@ export default function AdminUsersPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const { showToast } = useToast();
+
+  // Confirmation Modal State
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    type: "danger" | "warning" | "info";
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+    type: "danger"
+  });
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -49,19 +65,25 @@ export default function AdminUsersPage() {
     }
   };
 
-  const handleDeleteUser = async (userId: number) => {
-    if (!window.confirm("Are you sure you want to completely delete this user and all their scans? This cannot be undone.")) {
-      return;
-    }
-    
-    try {
-      await apiService.deleteUser(userId);
-      showToast("User deleted successfully", "success");
-      fetchUsers(); 
-    } catch (err: any) {
-      const msg = err.response?.data?.error || "Failed to delete user";
-      showToast(msg, "error");
-    }
+  const handleDeleteUser = (userId: number) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Delete User",
+      message: "Are you sure you want to completely delete this user and all their scans? This cannot be undone.",
+      type: "danger",
+      onConfirm: async () => {
+        try {
+          await apiService.deleteUser(userId);
+          showToast("User deleted successfully", "success");
+          fetchUsers(); 
+        } catch (err: any) {
+          const msg = err.response?.data?.error || "Failed to delete user";
+          showToast(msg, "error");
+        } finally {
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    });
   };
 
   const handleAddUser = async (e: React.FormEvent) => {
@@ -88,32 +110,30 @@ export default function AdminUsersPage() {
     }
   };
 
-  const handleImpersonate = async (user: User) => {
-    if (!window.confirm(`Are you sure you want to impersonate ${user.display_name || user.email}? You will be redirected to their dashboard.`)) {
-      return;
-    }
-    
-    try {
-      const res = await apiService.impersonateUser(user.id);
-      
-      // Save current admin token to session storage so we can easily return later if needed
-      sessionStorage.setItem("indai_admin_token", localStorage.getItem("indai_token") || "");
-      
-      // Override standard token
-      localStorage.setItem("indai_token", res.token);
-      localStorage.setItem("indai_user", JSON.stringify(res.user));
-      
-      showToast(`Now impersonating ${res.user.email}`, "success");
-      
-      // Redirect to user dashboard
-      setTimeout(() => {
-        window.location.href = "/dashboard";
-      }, 1000);
-      
-    } catch (err: any) {
-      const msg = err.response?.data?.error || "Failed to impersonate user";
-      showToast(msg, "error");
-    }
+  const handleImpersonate = (user: User) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Impersonate User",
+      message: `Are you sure you want to impersonate ${user.display_name || user.email}? You will be redirected to their dashboard.`,
+      type: "info",
+      onConfirm: async () => {
+        try {
+          const res = await apiService.impersonateUser(user.id);
+          sessionStorage.setItem("indai_admin_token", localStorage.getItem("indai_token") || "");
+          localStorage.setItem("indai_token", res.token);
+          localStorage.setItem("indai_user", JSON.stringify(res.user));
+          showToast(`Now impersonating ${res.user.email}`, "success");
+          setTimeout(() => {
+            window.location.href = "/dashboard";
+          }, 1000);
+        } catch (err: any) {
+          const msg = err.response?.data?.error || "Failed to impersonate user";
+          showToast(msg, "error");
+        } finally {
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    });
   };
 
   return (
@@ -384,6 +404,15 @@ export default function AdminUsersPage() {
           </div>
         </div>
       )}
+
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        type={confirmModal.type}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

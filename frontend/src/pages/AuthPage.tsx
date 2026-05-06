@@ -73,7 +73,7 @@ export default function AuthPage() {
     }
 
     // Auto-verify if all digits are filled
-    if (newDigits.every(d => d !== "") && newDigits.length === 6) {
+    if (newDigits.every(d => d !== "") && newDigits.length === 6 && !isSubmitting) {
       // Small delay to ensure state update is reflected
       setTimeout(() => handleVerifyOtp(undefined, newDigits.join("")), 10);
     }
@@ -101,7 +101,7 @@ export default function AuthPage() {
     inputRefs.current[focusIndex]?.focus();
 
     // Auto-verify if 6 digits were pasted
-    if (pastedData.length === 6) {
+    if (pastedData.length === 6 && !isSubmitting) {
       setTimeout(() => handleVerifyOtp(undefined, pastedData), 10);
     }
   };
@@ -163,6 +163,8 @@ export default function AuthPage() {
   // ── Verify OTP ──────────────────────────────────────────────
   const handleVerifyOtp = async (e?: React.FormEvent, overrideCode?: string) => {
     if (e) e.preventDefault();
+    if (isSubmitting) return;
+    
     setError("");
 
     const code = overrideCode || otpDigits.join("");
