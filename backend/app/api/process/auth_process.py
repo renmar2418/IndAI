@@ -21,6 +21,8 @@ import os
 import uuid
 import secrets
 import logging
+import smtplib
+from datetime import datetime, timezone
 from werkzeug.utils import secure_filename
 from flask import Blueprint, jsonify, request, redirect, g
 from app.services.auth_service import AuthService
