@@ -62,7 +62,7 @@ class EmailService:
             # Send via SMTP
             with smtplib.SMTP(smtp_server, smtp_port) as server:
                 server.starttls()  # Secure the connection
-                server.login(username, password)
+                server.login(username, password.replace(" ", ""))
                 server.sendmail(username, to_email, message.as_string())
 
             logger.info(f"OTP email sent to {to_email} via Gmail SMTP (purpose={purpose})")
