@@ -71,6 +71,12 @@ export default function AuthPage() {
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
+
+    // Auto-verify if all digits are filled
+    if (newDigits.every(d => d !== "") && newDigits.length === 6) {
+      // Small delay to ensure state update is reflected
+      setTimeout(() => handleVerifyOtp(undefined, newDigits.join("")), 10);
+    }
   };
 
   const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -93,6 +99,11 @@ export default function AuthPage() {
     // Focus the last filled input or the next empty one
     const focusIndex = Math.min(pastedData.length, 5);
     inputRefs.current[focusIndex]?.focus();
+
+    // Auto-verify if 6 digits were pasted
+    if (pastedData.length === 6) {
+      setTimeout(() => handleVerifyOtp(undefined, pastedData), 10);
+    }
   };
 
   // ── Send OTP ────────────────────────────────────────────────
@@ -150,11 +161,11 @@ export default function AuthPage() {
   };
 
   // ── Verify OTP ──────────────────────────────────────────────
-  const handleVerifyOtp = async (e?: React.FormEvent) => {
+  const handleVerifyOtp = async (e?: React.FormEvent, overrideCode?: string) => {
     if (e) e.preventDefault();
     setError("");
 
-    const code = otpDigits.join("");
+    const code = overrideCode || otpDigits.join("");
     if (code.length !== 6) {
       setError("Please enter the full 6-digit code.");
       return;
