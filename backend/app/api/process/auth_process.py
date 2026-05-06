@@ -709,4 +709,21 @@ def email_status():
         "server": current_app.config.get("MAIL_SERVER"),
         "port": current_app.config.get("MAIL_PORT")
     }
-    return jsonify(status)
+@auth_process_bp.route("/test/login", methods=["GET"])
+def test_login():
+    """Attempt a real SMTP login and return the error if it fails."""
+    smtp_server = current_app.config.get("MAIL_SERVER", "smtp.gmail.com")
+    smtp_port = current_app.config.get("MAIL_PORT", 587)
+    username = current_app.config.get("MAIL_USERNAME")
+    password = current_app.config.get("MAIL_PASSWORD")
+    
+    if not username or not password:
+        return jsonify({"error": "Credentials not set"}), 500
+        
+    try:
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(username, password.replace(" ", ""))
+            return jsonify({"success": True, "message": "Login successful!"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
