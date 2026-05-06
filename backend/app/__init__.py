@@ -54,6 +54,14 @@ def create_app(config_class=None):
         from app.models import user, scan, vulnerability, feedback, shared_snippet, github_connection, otp  # noqa: F401
 
         db.create_all()
+        
+        # FIX: Ensure google_id and facebook_id are nullable in the actual database
+        try:
+            db.session.execute(db.text("ALTER TABLE users ALTER COLUMN google_id DROP NOT NULL"))
+            db.session.execute(db.text("ALTER TABLE users ALTER COLUMN facebook_id DROP NOT NULL"))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
 
     # Global IP Blacklist Middleware
     @app.before_request
