@@ -51,7 +51,7 @@ def create_app(config_class=None):
     # Create tables if they don't exist (development convenience)
     with app.app_context():
         # Import models so SQLAlchemy knows about them
-        from app.models import user, scan, vulnerability, feedback, shared_snippet, github_connection  # noqa: F401
+        from app.models import user, scan, vulnerability, feedback, shared_snippet, github_connection, otp  # noqa: F401
 
         db.create_all()
 

@@ -12,6 +12,7 @@ from .daily_stat import DailyPlatformStat
 from .system_config import SystemConfig
 from .system_alert import SystemAlert
 from .blacklisted_ip import BlacklistedIP
+from .otp import OTP
 
 __all__ = [
     "BaseModel", 
@@ -25,5 +26,6 @@ __all__ = [
     "DailyPlatformStat",
     "SystemConfig",
     "SystemAlert",
-    "BlacklistedIP"
+    "BlacklistedIP",
+    "OTP"
 ]

@@ -6,7 +6,6 @@ export default function ProfilePage() {
   const { user, setTokenAndFetch } = useAuth();
   
   const [displayName, setDisplayName] = useState("");
-  const [username, setUsername] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -17,7 +16,6 @@ export default function ProfilePage() {
   useEffect(() => {
     if (user) {
       setDisplayName(user.display_name || "");
-      setUsername(user.username || "");
       setPhoneNumber(user.phone_number || "");
       // Get absolute URL for local avatars if it's a relative path
       const avatarStr = user.avatar_url;
@@ -46,7 +44,6 @@ export default function ProfilePage() {
     try {
       let submitData: any = {
         display_name: displayName,
-        username: username,
         phone_number: phoneNumber,
       };
 
@@ -54,7 +51,6 @@ export default function ProfilePage() {
       if (avatarFile) {
         const formData = new FormData();
         formData.append("display_name", displayName);
-        formData.append("username", username);
         formData.append("phone_number", phoneNumber);
         formData.append("avatar", avatarFile);
         submitData = formData;
@@ -110,7 +106,7 @@ export default function ProfilePage() {
             />
 
             <div className="profile-info-header">
-              <h2>{user?.username || user?.email.split("@")[0]}</h2>
+              <h2>{user?.display_name || user?.email.split("@")[0]}</h2>
               <p>{user?.email}</p>
             </div>
           </div>
@@ -118,17 +114,6 @@ export default function ProfilePage() {
           <form onSubmit={handleSubmit} className="profile-form">
             {successMsg && <div className="alert-success">{successMsg}</div>}
             {errorMsg && <div className="alert-error">{errorMsg}</div>}
-
-            <div className="form-group">
-              <label>Username</label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="form-input"
-                placeholder="Enter your username"
-              />
-            </div>
 
             <div className="form-group">
               <label>Display Name</label>

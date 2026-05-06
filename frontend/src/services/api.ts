@@ -96,6 +96,52 @@ class ApiService {
     return response.data;
   }
 
+  // ── Email OTP Authentication ──────────────────────────────────
+
+  async sendOtp(email: string, purpose: string = "register"): Promise<{
+    success: boolean;
+    message: string;
+    data?: {
+      email: string;
+      purpose: string;
+      expires_at: string;
+      remaining_seconds: number;
+    };
+    error_code?: string;
+    retry_after?: number;
+  }> {
+    const response = await axios.post(`${API_BASE_URL}/api/v1/process/auth/otp/send`, { email, purpose });
+    return response.data;
+  }
+
+  async verifyOtp(email: string, code: string, purpose: string = "register"): Promise<{
+    success: boolean;
+    message: string;
+    token?: string;
+    user?: import("../types").User;
+    error_code?: string;
+    details?: { remaining_attempts: number };
+    remaining_seconds?: number;
+  }> {
+    const response = await axios.post(`${API_BASE_URL}/api/v1/process/auth/otp/verify`, { email, code, purpose });
+    return response.data;
+  }
+
+  async resendOtp(email: string, purpose: string = "register"): Promise<{
+    success: boolean;
+    message: string;
+    data?: {
+      email: string;
+      purpose: string;
+      expires_at: string;
+      remaining_seconds: number;
+    };
+    error_code?: string;
+  }> {
+    const response = await axios.post(`${API_BASE_URL}/api/v1/process/auth/otp/resend`, { email, purpose });
+    return response.data;
+  }
+
   async getAuthStatus(): Promise<{
     authenticated: boolean;
     user: import("../types").User;

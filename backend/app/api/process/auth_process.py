@@ -19,13 +19,19 @@ device before completing the login — no custom code needed on our side.
 import re
 import os
 import uuid
+import secrets
+import logging
 from werkzeug.utils import secure_filename
 from flask import Blueprint, jsonify, request, redirect, g
 from app.services.auth_service import AuthService
+from app.services.email_service import EmailService
 from app.models.user import User
+from app.models.otp import OTP
 from app.middleware.auth_middleware import login_required
 from app.extensions import limiter
 from flask import current_app
+
+logger = logging.getLogger(__name__)
 
 auth_process_bp = Blueprint("process_auth", __name__)
 
@@ -35,38 +41,32 @@ auth_process_bp = Blueprint("process_auth", __name__)
 def register():
     """
     Process API: Register a new user with credentials.
-    Expects JSON: email, password, username, display_name, phone_number
+    Expects JSON: email, password, display_name, phone_number
+    (Username removed — OTP-based registration is preferred)
     """
     data = request.get_json()
     email = data.get("email", "")
-    username = data.get("username", "")
     password = data.get("password", "")
 
-    if not email or not username or not password:
-        return jsonify({"error": "Email, username, and password are required"}), 400
+    if not email or not password:
+        return jsonify({"error": "Email and password are required"}), 400
 
     # Strict Validation
     if not re.match(r"^[^\s@]+@[^\s@]+\.[^\s@]+$", email):
         return jsonify({"error": "Invalid email format"}), 400
-    
-    if len(username) < 3 or not re.match(r"^[a-zA-Z0-9_]+$", username):
-        return jsonify({"error": "Username must be at least 3 characters and contain only letters, numbers, and underscores"}), 400
         
     password_regex = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
     if not re.match(password_regex, password):
         return jsonify({"error": "Password must be at least 8 characters, include an uppercase letter, a number, and a special character"}), 400
 
-    # Check if email or username already exists
+    # Check if email already exists
     if User.find_by_email(data["email"]):
         return jsonify({"error": "Email already in use"}), 409
-    if data.get("username") and User.query.filter_by(username=data["username"]).first():
-        return jsonify({"error": "Username already taken"}), 409
 
-    # Create new user
+    # Create new user (no username required)
     user = User.create(
         email=data["email"],
-        username=data.get("username"),
-        display_name=data.get("display_name") or data.get("username") or data["email"].split("@")[0],
+        display_name=data.get("display_name") or data["email"].split("@")[0],
         phone_number=data.get("phone_number")
     )
     user.set_password(data["password"])
@@ -79,6 +79,282 @@ def register():
         "token": token,
         "user": user.to_dict()
     }), 201
+
+
+# ── Email OTP Authentication ──────────────────────────────────────
+
+@auth_process_bp.route("/otp/send", methods=["POST"])
+@limiter.limit("5 per minute")
+def send_otp():
+    """
+    Process API: Send a 6-digit OTP code to the user's email.
+    Expects JSON: { email, purpose? }
+    purpose can be "register" (default), "login", or "reset".
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify({
+            "success": False,
+            "error_code": "MISSING_BODY",
+            "message": "Request body is required."
+        }), 400
+
+    email = (data.get("email") or "").strip().lower()
+    purpose = data.get("purpose", "register")
+
+    # ── Validate email format ──
+    if not email:
+        return jsonify({
+            "success": False,
+            "error_code": "EMAIL_REQUIRED",
+            "message": "Please enter your email address."
+        }), 400
+
+    if not re.match(r"^[^\s@]+@[^\s@]+\.[^\s@]+$", email):
+        return jsonify({
+            "success": False,
+            "error_code": "EMAIL_INVALID",
+            "message": "Please enter a valid email address."
+        }), 400
+
+    if purpose not in ("register", "login", "reset"):
+        return jsonify({
+            "success": False,
+            "error_code": "INVALID_PURPOSE",
+            "message": "Invalid verification purpose."
+        }), 400
+
+    # ── Check for existing user based on purpose ──
+    existing_user = User.find_by_email(email)
+
+    if purpose == "register" and existing_user:
+        return jsonify({
+            "success": False,
+            "error_code": "EMAIL_EXISTS",
+            "message": "An account with this email already exists. Please sign in instead."
+        }), 409
+
+    if purpose == "login" and not existing_user:
+        return jsonify({
+            "success": False,
+            "error_code": "USER_NOT_FOUND",
+            "message": "No account found with this email. Please register first."
+        }), 404
+
+    # ── Rate limit: check if an OTP was sent recently ──
+    recent_otp = OTP.find_latest_for_email(email, purpose)
+    if recent_otp and recent_otp.remaining_seconds > (OTP.OTP_TTL_SECONDS - 30):
+        return jsonify({
+            "success": False,
+            "error_code": "OTP_COOLDOWN",
+            "message": "A code was just sent. Please wait before requesting another.",
+            "retry_after": recent_otp.remaining_seconds - (OTP.OTP_TTL_SECONDS - 30)
+        }), 429
+
+    # ── Generate secure 6-digit OTP ──
+    otp_code = "{:06d}".format(secrets.randbelow(1000000))
+
+    # ── Store OTP (hashed, with 3-min expiry) ──
+    otp_record = OTP.create_for_email(email, otp_code, purpose)
+
+    # ── Send email via Resend ──
+    try:
+        result = EmailService.send_otp_email(email, otp_code, purpose)
+        if result is None:
+            return jsonify({
+                "success": False,
+                "error_code": "EMAIL_SEND_FAILED",
+                "message": "We couldn't send the verification email. Please try again in a moment."
+            }), 502
+    except ValueError as ve:
+        logger.error(f"Email config error: {ve}")
+        return jsonify({
+            "success": False,
+            "error_code": "EMAIL_NOT_CONFIGURED",
+            "message": "Email service is not configured. Please contact support."
+        }), 503
+    except Exception as e:
+        logger.error(f"Unexpected email error: {e}", exc_info=True)
+        return jsonify({
+            "success": False,
+            "error_code": "EMAIL_SEND_FAILED",
+            "message": "We couldn't send the verification email. Please try again in a moment."
+        }), 502
+
+    return jsonify({
+        "success": True,
+        "message": "Verification code sent to your email.",
+        "data": {
+            "email": email,
+            "purpose": purpose,
+            "expires_at": otp_record.expires_at.isoformat(),
+            "remaining_seconds": otp_record.remaining_seconds,
+        }
+    }), 200
+
+
+@auth_process_bp.route("/otp/verify", methods=["POST"])
+@limiter.limit("10 per minute")
+def verify_otp():
+    """
+    Process API: Verify a 6-digit OTP code.
+    Expects JSON: { email, code, purpose? }
+    On success: finds or creates user, returns JWT token.
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify({
+            "success": False,
+            "error_code": "MISSING_BODY",
+            "message": "Request body is required."
+        }), 400
+
+    email = (data.get("email") or "").strip().lower()
+    code = (data.get("code") or "").strip()
+    purpose = data.get("purpose", "register")
+
+    # ── Input validation ──
+    if not email or not code:
+        return jsonify({
+            "success": False,
+            "error_code": "MISSING_FIELDS",
+            "message": "Email and verification code are required."
+        }), 400
+
+    if not re.match(r"^\d{6}$", code):
+        return jsonify({
+            "success": False,
+            "error_code": "INVALID_CODE_FORMAT",
+            "message": "Please enter a valid 6-digit code."
+        }), 400
+
+    # ── Find the OTP record ──
+    otp_record = OTP.find_latest_for_email(email, purpose)
+
+    if not otp_record:
+        return jsonify({
+            "success": False,
+            "error_code": "OTP_NOT_FOUND",
+            "message": "No verification code found for this email. Please request a new one."
+        }), 404
+
+    # ── Check expiry ──
+    if otp_record.is_expired:
+        return jsonify({
+            "success": False,
+            "error_code": "OTP_EXPIRED",
+            "message": "This code has expired. Please request a new one.",
+            "remaining_seconds": 0
+        }), 410
+
+    # ── Check brute-force lockout ──
+    if otp_record.is_locked:
+        return jsonify({
+            "success": False,
+            "error_code": "OTP_LOCKED",
+            "message": "Too many incorrect attempts. Please request a new code.",
+            "details": {"remaining_attempts": 0}
+        }), 429
+
+    # ── Verify the code ──
+    if not otp_record.check_code(code):
+        otp_record.increment_attempts()
+        remaining = OTP.MAX_ATTEMPTS - otp_record.attempts
+        return jsonify({
+            "success": False,
+            "error_code": "OTP_INVALID",
+            "message": "The code you entered is incorrect. Please check your email and try again.",
+            "details": {"remaining_attempts": max(0, remaining)}
+        }), 401
+
+    # ── Code is valid — find or create user ──
+    user = User.find_by_email(email)
+
+    if not user:
+        # New user registration (OTP-verified, no password needed)
+        display_name = email.split("@")[0]
+        user = User.create(
+            email=email,
+            display_name=display_name,
+        )
+
+    # ── Cleanup: delete the used OTP ──
+    otp_record.delete()
+
+    # ── Generate JWT token ──
+    token = AuthService.generate_token(user.id)
+
+    return jsonify({
+        "success": True,
+        "message": "Email verified successfully.",
+        "token": token,
+        "user": user.to_dict()
+    }), 200
+
+
+@auth_process_bp.route("/otp/resend", methods=["POST"])
+@limiter.limit("3 per minute")
+def resend_otp():
+    """
+    Process API: Resend OTP code.
+    Invalidates the old code and generates a new one.
+    Expects JSON: { email, purpose? }
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify({
+            "success": False,
+            "error_code": "MISSING_BODY",
+            "message": "Request body is required."
+        }), 400
+
+    email = (data.get("email") or "").strip().lower()
+    purpose = data.get("purpose", "register")
+
+    if not email:
+        return jsonify({
+            "success": False,
+            "error_code": "EMAIL_REQUIRED",
+            "message": "Please enter your email address."
+        }), 400
+
+    if not re.match(r"^[^\s@]+@[^\s@]+\.[^\s@]+$", email):
+        return jsonify({
+            "success": False,
+            "error_code": "EMAIL_INVALID",
+            "message": "Please enter a valid email address."
+        }), 400
+
+    # ── Generate and send new OTP ──
+    otp_code = "{:06d}".format(secrets.randbelow(1000000))
+    otp_record = OTP.create_for_email(email, otp_code, purpose)
+
+    try:
+        result = EmailService.send_otp_email(email, otp_code, purpose)
+        if result is None:
+            return jsonify({
+                "success": False,
+                "error_code": "EMAIL_SEND_FAILED",
+                "message": "We couldn't resend the verification email. Please try again."
+            }), 502
+    except Exception as e:
+        logger.error(f"Resend OTP email error: {e}", exc_info=True)
+        return jsonify({
+            "success": False,
+            "error_code": "EMAIL_SEND_FAILED",
+            "message": "We couldn't resend the verification email. Please try again."
+        }), 502
+
+    return jsonify({
+        "success": True,
+        "message": "A new verification code has been sent to your email.",
+        "data": {
+            "email": email,
+            "purpose": purpose,
+            "expires_at": otp_record.expires_at.isoformat(),
+            "remaining_seconds": otp_record.remaining_seconds,
+        }
+    }), 200
 
 
 @auth_process_bp.route("/login", methods=["POST"])

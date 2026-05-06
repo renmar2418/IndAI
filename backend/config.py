@@ -41,6 +41,10 @@ class Config:
     MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY", "")
     AI_VERIFY_ENABLED = os.getenv("AI_VERIFY_ENABLED", "true").lower() == "true"
 
+    # Resend (Email OTP)
+    RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+    RESEND_FROM_EMAIL = os.getenv("RESEND_FROM_EMAIL", "IndAI <noreply@renmar.dev>")
+
     # Frontend URLs (comma-separated for multiple origins)
     FRONTEND_URLS = os.getenv(
         "FRONTEND_URLS", "https://ind-ai-five.vercel.app,https://www.renmar.dev,http://localhost:5173,http://localhost:5174"
