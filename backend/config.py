@@ -41,9 +41,13 @@ class Config:
     MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY", "")
     AI_VERIFY_ENABLED = os.getenv("AI_VERIFY_ENABLED", "true").lower() == "true"
 
-    # Resend (Email OTP)
-    RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
-    RESEND_FROM_EMAIL = os.getenv("RESEND_FROM_EMAIL", "IndAI <noreply@renmar.dev>")
+    # Email Configuration (SMTP)
+    MAIL_SERVER = os.getenv("MAIL_SERVER", "smtp.gmail.com")
+    MAIL_PORT = int(os.getenv("MAIL_PORT", 587))
+    MAIL_USE_TLS = os.getenv("MAIL_USE_TLS", "true").lower() == "true"
+    MAIL_USERNAME = os.getenv("MAIL_USERNAME", "")
+    MAIL_PASSWORD = os.getenv("MAIL_PASSWORD", "")
+    MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER", f"IndAI <{MAIL_USERNAME}>")
 
     # Frontend URLs (comma-separated for multiple origins)
     FRONTEND_URLS = os.getenv(

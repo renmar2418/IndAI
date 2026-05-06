@@ -1,6 +1,6 @@
 """
-IndAI — Email Service (Resend Provider)
-Sends branded OTP verification emails using the Resend API.
+IndAI — Email Service (Gmail SMTP Provider)
+Sends branded OTP verification emails using Python's smtplib and Gmail SMTP.
 
 The HTML template is aligned to IndAI's UI/UX:
   - Deep Slate background (#020617)
@@ -9,7 +9,9 @@ The HTML template is aligned to IndAI's UI/UX:
 """
 
 import logging
-import resend
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from flask import current_app
 
 logger = logging.getLogger(__name__)
@@ -17,22 +19,14 @@ logger = logging.getLogger(__name__)
 
 class EmailService:
     """
-    Service class for sending transactional emails via Resend.
+    Service class for sending transactional emails via SMTP.
     Encapsulates email composition, template rendering, and delivery.
     """
 
     @staticmethod
-    def _init_resend():
-        """Initialize the Resend SDK with the API key from config."""
-        api_key = current_app.config.get("RESEND_API_KEY", "")
-        if not api_key:
-            raise ValueError("RESEND_API_KEY is not configured. Cannot send emails.")
-        resend.api_key = api_key
-
-    @staticmethod
     def send_otp_email(to_email, otp_code, purpose="register"):
         """
-        Send a branded OTP verification email.
+        Send a branded OTP verification email using Gmail SMTP.
 
         Args:
             to_email: Recipient email address.
@@ -40,25 +34,39 @@ class EmailService:
             purpose: "register", "login", or "reset".
 
         Returns:
-            dict with email id on success, None on failure.
+            dict with message status, None on failure.
         """
         try:
-            EmailService._init_resend()
+            # Get configurations
+            smtp_server = current_app.config.get("MAIL_SERVER", "smtp.gmail.com")
+            smtp_port = current_app.config.get("MAIL_PORT", 587)
+            username = current_app.config.get("MAIL_USERNAME")
+            password = current_app.config.get("MAIL_PASSWORD")
+            from_email = current_app.config.get("MAIL_DEFAULT_SENDER")
+
+            if not username or not password:
+                raise ValueError("MAIL_USERNAME or MAIL_PASSWORD not configured.")
 
             subject = EmailService._get_subject(purpose)
             html_body = EmailService._render_otp_template(to_email, otp_code, purpose)
-            from_email = current_app.config.get("RESEND_FROM_EMAIL", "IndAI <noreply@renmar.dev>")
 
-            params: resend.Emails.SendParams = {
-                "from": from_email,
-                "to": [to_email],
-                "subject": subject,
-                "html": html_body,
-            }
+            # Construct the email
+            message = MIMEMultipart("alternative")
+            message["Subject"] = subject
+            message["From"] = from_email
+            message["To"] = to_email
 
-            result = resend.Emails.send(params)
-            logger.info(f"OTP email sent to {to_email} (purpose={purpose}, id={result.get('id', 'unknown')})")
-            return result
+            part = MIMEText(html_body, "html")
+            message.attach(part)
+
+            # Send via SMTP
+            with smtplib.SMTP(smtp_server, smtp_port) as server:
+                server.starttls()  # Secure the connection
+                server.login(username, password)
+                server.sendmail(username, to_email, message.as_string())
+
+            logger.info(f"OTP email sent to {to_email} via Gmail SMTP (purpose={purpose})")
+            return {"status": "sent", "to": to_email}
 
         except ValueError as ve:
             logger.error(f"Email configuration error: {ve}")

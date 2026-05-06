@@ -161,12 +161,14 @@ def send_otp():
     try:
         result = EmailService.send_otp_email(email, otp_code, purpose)
         if result is None:
+            otp_record.delete()
             return jsonify({
                 "success": False,
                 "error_code": "EMAIL_SEND_FAILED",
                 "message": "We couldn't send the verification email. Please try again in a moment."
             }), 502
     except ValueError as ve:
+        otp_record.delete()
         logger.error(f"Email config error: {ve}")
         return jsonify({
             "success": False,
@@ -174,6 +176,7 @@ def send_otp():
             "message": "Email service is not configured. Please contact support."
         }), 503
     except Exception as e:
+        otp_record.delete()
         logger.error(f"Unexpected email error: {e}", exc_info=True)
         return jsonify({
             "success": False,
@@ -332,12 +335,14 @@ def resend_otp():
     try:
         result = EmailService.send_otp_email(email, otp_code, purpose)
         if result is None:
+            otp_record.delete()
             return jsonify({
                 "success": False,
                 "error_code": "EMAIL_SEND_FAILED",
                 "message": "We couldn't resend the verification email. Please try again."
             }), 502
     except Exception as e:
+        otp_record.delete()
         logger.error(f"Resend OTP email error: {e}", exc_info=True)
         return jsonify({
             "success": False,
