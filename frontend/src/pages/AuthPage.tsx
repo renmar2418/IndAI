@@ -15,7 +15,6 @@ export default function AuthPage() {
   const [successMsg, setSuccessMsg] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [countdown, setCountdown] = useState(0);
-  const [canResend, setCanResend] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
 
   const { setTokenAndFetch, isAuthenticated } = useAuth();
@@ -31,7 +30,6 @@ export default function AuthPage() {
   // ── Countdown Timer ──────────────────────────────────────────
   const startCountdown = useCallback((seconds: number) => {
     setCountdown(seconds);
-    setCanResend(false);
 
     if (countdownRef.current) clearInterval(countdownRef.current);
 
@@ -39,7 +37,6 @@ export default function AuthPage() {
       setCountdown((prev) => {
         if (prev <= 1) {
           if (countdownRef.current) clearInterval(countdownRef.current);
-          setCanResend(true);
           return 0;
         }
         return prev - 1;
@@ -180,17 +177,14 @@ export default function AuthPage() {
 
       if (errorCode === "OTP_EXPIRED") {
         setError("This code has expired. Please request a new one.");
-        setCanResend(true);
         setCountdown(0);
       } else if (errorCode === "OTP_INVALID") {
         const attemptMsg = remaining !== undefined ? ` (${remaining} attempts remaining)` : "";
         setError(`Incorrect code. Please check your email and try again.${attemptMsg}`);
       } else if (errorCode === "OTP_LOCKED") {
         setError("Too many incorrect attempts. Please request a new code.");
-        setCanResend(true);
       } else if (errorCode === "OTP_NOT_FOUND") {
         setError("No verification code found. Please request a new one.");
-        setCanResend(true);
       } else {
         setError(serverMsg || "Verification failed. Please try again.");
       }
