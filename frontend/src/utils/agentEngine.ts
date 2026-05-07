@@ -100,8 +100,8 @@ const INTENT_PATTERNS: { type: IntentType; patterns: RegExp[]; weight: number }[
   {
     type: "navigate",
     patterns: [
-      /\b(go\s+to|open|navigate\s+to|take\s+me\s+to|show\s+me)\b\s+(the\s+)?(dashboard|scan|home|detail)/i,
-      /\bgo\s+(dashboard|scan|home)\b/i,
+      /\b(go\s+to|open|navigate\s+to|take\s+me\s+to|show\s+me)\b\s+(the\s+)?(dashboard|scan|home|detail|admin|share|quick\s*share|github)/i,
+      /\bgo\s+(dashboard|scan|home|admin|share|quick\s*share|github)\b/i,
     ],
     weight: 1.5,
   },
@@ -205,8 +205,8 @@ export class AgentEngine {
     if (scanIdMatch) entities.scanId = scanIdMatch[2];
 
     // Extract nav target
-    const navMatch = input.match(/\b(dashboard|scan|home|detail)\b/i);
-    if (navMatch) entities.page = navMatch[1].toLowerCase();
+    const navMatch = input.match(/\b(dashboard|scan|home|detail|admin|share|quick\s*share|github)\b/i);
+    if (navMatch) entities.page = navMatch[1].toLowerCase().replace(/\s/g, "");
 
     // Extract security topic
     for (const topic of Object.keys(SECURITY_TIPS)) {
@@ -228,7 +228,7 @@ export class AgentEngine {
   static async processMessage(
     message: string,
     _history: AgentMessage[],
-    context?: { page?: string; scanId?: number }
+    context?: { page?: string; scanId?: number; isAdmin?: boolean }
   ): Promise<AgentMessage> {
     const input = message.trim().toLowerCase();
 
@@ -248,9 +248,10 @@ export class AgentEngine {
     }
 
     // "go to dashboard" / "open scan" / "navigate to home"
-    const navPrecheck = input.match(/\b(go\s*to|open|navigate\s*to|take\s*me\s*to)\s+(the\s+)?(dashboard|scan|home)\b/i);
+    const navPrecheck = input.match(/\b(go\s*to|open|navigate\s*to|take\s*me\s*to)\s+(the\s+)?(dashboard|scan|home|admin|share|quick\s*share|github)\b/i);
     if (navPrecheck) {
-      return this.handleNavigate(navPrecheck[3].toLowerCase());
+      const pageTarget = navPrecheck[3].toLowerCase().replace(/\s/g, "");
+      return this.handleNavigate(pageTarget, context?.isAdmin);
     }
 
     // ─── Pattern-based detection for everything else ────────
@@ -284,7 +285,7 @@ export class AgentEngine {
         return this.handleScanSummary(entities.scanId, context?.scanId);
 
       case "navigate":
-        return this.handleNavigate(entities.page || "dashboard");
+        return this.handleNavigate(entities.page || "dashboard", context?.isAdmin);
 
       case "suggest":
         return this.handleSuggest(context?.page);
@@ -486,12 +487,23 @@ export class AgentEngine {
     }
   }
 
-  private static handleNavigate(page: string): AgentMessage {
+  private static handleNavigate(page: string, isAdmin: boolean = false): AgentMessage {
     const routes: Record<string, { path: string; label: string }> = {
       dashboard: { path: "/dashboard", label: "Dashboard" },
       scan: { path: "/scan", label: "Scan Code" },
       home: { path: "/", label: "Home Page" },
+      admin: { path: "/admin", label: "Admin Dashboard" },
+      share: { path: "/share", label: "Share Snippet" },
+      quickshare: { path: "/quickshare", label: "QuickShare" },
+      github: { path: "/github", label: "GitHub Repositories" },
     };
+
+    if (page === "admin" && !isAdmin) {
+      return this.makeReply(
+        "I am an AI assistant focused on your code security. I cannot provide information about or access to administrative infrastructure, and unauthorized access attempts are strictly monitored."
+      );
+    }
+
     const route = routes[page] || routes.dashboard;
     return this.makeReply(
       `🧭 Taking you to **${route.label}**...`,

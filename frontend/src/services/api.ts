@@ -82,10 +82,6 @@ class ApiService {
     return `${API_BASE_URL}/api/v1/process/auth/google/login`;
   }
 
-  getFacebookLoginUrl(): string {
-    return `${API_BASE_URL}/api/v1/process/auth/facebook/login`;
-  }
-
   async loginWithCredentials(identifier: string, password: string): Promise<{ token: string; user: import("../types").User }> {
     const response = await axios.post(`${API_BASE_URL}/api/v1/process/auth/login`, { identifier, password });
     return response.data;

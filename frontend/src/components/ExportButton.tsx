@@ -3,6 +3,8 @@
  * Downloads corrected code as a file.
  */
 
+import { useState } from "react";
+import JSZip from "jszip";
 import type { ExportButtonProps } from "../types";
 
 const EXTENSION_MAP: Record<string, string> = {
@@ -18,24 +20,43 @@ const EXTENSION_MAP: Record<string, string> = {
 
 export default function ExportButton({
   code,
+  originalCode,
+  scanName,
   language,
   disabled,
 }: ExportButtonProps) {
-  const handleExport = () => {
-    if (!code) return;
+  const [isExporting, setIsExporting] = useState(false);
 
-    const extension = EXTENSION_MAP[language] || ".txt";
-    const filename = `indai_corrected_code${extension}`;
-    const blob = new Blob([code], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
+  const handleExport = async () => {
+    if (!code || isExporting) return;
+    setIsExporting(true);
 
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    try {
+      const zip = new JSZip();
+      const extension = EXTENSION_MAP[language] || ".txt";
+      const baseName = scanName ? scanName.replace(/\.[^/.]+$/, "") : "code";
+      
+      zip.file(`fixed_${baseName}${extension}`, code);
+      
+      if (originalCode) {
+        zip.file(`original_${baseName}${extension}`, originalCode);
+      }
+
+      const blob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `indai_${baseName}_export.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Failed to generate zip", err);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -58,7 +79,7 @@ export default function ExportButton({
         <polyline points="7,10 12,15 17,10" />
         <line x1="12" y1="15" x2="12" y2="3" />
       </svg>
-      Extract Code
+      {isExporting ? "Zipping..." : "Extract Code"}
     </button>
   );
 }

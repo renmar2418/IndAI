@@ -254,7 +254,6 @@ export default function AuthPage() {
     if (countdownRef.current) clearInterval(countdownRef.current);
   };
 
-  // ── Google & Facebook Login ─────────────────────────────────
   const handleGoogleLogin = () => {
     const loginUrl = apiService.getGoogleLoginUrl();
     fetch(loginUrl)
@@ -263,16 +262,6 @@ export default function AuthPage() {
         if (data.auth_url) window.location.href = data.auth_url;
       })
       .catch(() => setError("Google login failed to initialize"));
-  };
-
-  const handleFacebookLogin = () => {
-    const loginUrl = apiService.getFacebookLoginUrl();
-    fetch(loginUrl)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.auth_url) window.location.href = data.auth_url;
-      })
-      .catch(() => setError("Facebook login failed to initialize"));
   };
 
   // ── Render ──────────────────────────────────────────────────
@@ -364,13 +353,7 @@ export default function AuthPage() {
                 <span>or continue with</span>
               </div>
 
-              <div className="social-login-group">
-                <button className="social-btn facebook" type="button" onClick={handleFacebookLogin}>
-                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-                    <path d="M14 13.5h2.5l1-4H14v-2c0-1.03 0-2 2-2h1.5V2.14c-.326-.043-1.557-.14-2.857-.14C11.928 2 10 3.657 10 6.7v2.8H7v4h3V22h4v-8.5z" />
-                  </svg>
-                  Facebook
-                </button>
+              <div className="social-login-group single">
                 <button className="social-btn google" type="button" onClick={handleGoogleLogin}>
                   <svg width="20" height="20" viewBox="0 0 24 24">
                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
@@ -378,7 +361,7 @@ export default function AuthPage() {
                     <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
                     <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                   </svg>
-                  Google
+                  Sign in with Google
                 </button>
               </div>
 

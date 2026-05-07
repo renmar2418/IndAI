@@ -74,34 +74,25 @@ export default function PrivacyPolicyPage() {
             <p style={{ marginTop: '12px' }}>Upon receiving a valid deletion request, we will permanently delete your account, profile information, scan history, and all associated data within 30 days. This action is irreversible.</p>
           </section>
 
-          <section>
-            <h2 style={{ fontSize: '1.15rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '12px' }}>6. Facebook Data</h2>
-            <p>If you log in using Facebook, we access your basic public profile and email address through the Facebook Login API. We use this data exclusively for account creation and authentication. In compliance with Facebook Platform Policy:</p>
-            <ul style={{ paddingLeft: '24px', marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <li>We only request the <code style={{ background: 'rgba(0,240,255,0.1)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.85rem' }}>email</code> and <code style={{ background: 'rgba(0,240,255,0.1)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.85rem' }}>public_profile</code> permissions</li>
-              <li>We do not post to your Facebook timeline or access your friends list</li>
-              <li>You can revoke access at any time via your <a href="https://www.facebook.com/settings?tab=applications" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-cyan)' }}>Facebook App Settings</a></li>
-              <li>Upon revocation or deletion request, we delete all Facebook-sourced data</li>
-            </ul>
-          </section>
+
 
           <section>
-            <h2 style={{ fontSize: '1.15rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '12px' }}>7. Cookies & Local Storage</h2>
+            <h2 style={{ fontSize: '1.15rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '12px' }}>6. Cookies & Local Storage</h2>
             <p>IndAI uses browser local storage to store your authentication token (JWT) for maintaining your login session. We do not use third-party tracking cookies. No advertising cookies are used on this platform.</p>
           </section>
 
           <section>
-            <h2 style={{ fontSize: '1.15rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '12px' }}>8. Children's Privacy</h2>
+            <h2 style={{ fontSize: '1.15rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '12px' }}>7. Children's Privacy</h2>
             <p>IndAI is not intended for use by individuals under the age of 13. We do not knowingly collect personal information from children. If we become aware that we have collected data from a child under 13, we will take steps to delete that information promptly.</p>
           </section>
 
           <section>
-            <h2 style={{ fontSize: '1.15rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '12px' }}>9. Changes to This Policy</h2>
+            <h2 style={{ fontSize: '1.15rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '12px' }}>8. Changes to This Policy</h2>
             <p>We may update this Privacy Policy from time to time. We will notify users of significant changes. Continued use of the platform after changes are posted constitutes acceptance of the revised policy.</p>
           </section>
 
           <section>
-            <h2 style={{ fontSize: '1.15rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '12px' }}>10. Contact Us</h2>
+            <h2 style={{ fontSize: '1.15rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '12px' }}>9. Contact Us</h2>
             <p>If you have any questions, concerns, or data deletion requests, please contact us at:</p>
             <p style={{ marginTop: '8px', color: 'var(--accent-cyan)' }}>
               gombiorenmar998@gmail.com

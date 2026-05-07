@@ -565,65 +565,11 @@ def logout():
     }), 200
 
 
-# ── Facebook OAuth ──────────────────────────────────────────
-
-@auth_process_bp.route("/facebook/login", methods=["GET"])
-def facebook_login():
-    """
-    Process API: Initiate Facebook OAuth flow.
-    Returns the Facebook authorization URL for the frontend to redirect to.
-    """
-    auth_url = AuthService.get_facebook_auth_url()
-    return jsonify({"auth_url": auth_url}), 200
 
 
-@auth_process_bp.route("/facebook/callback", methods=["GET"])
-def facebook_callback():
-    """
-    Process API: Handle Facebook OAuth callback.
-    Orchestrates: code exchange -> user info -> user creation -> token generation.
-    """
-    code = request.args.get("code")
-    error = request.args.get("error")
 
-    frontend_url = current_app.config["FRONTEND_URL"]
 
-    if error:
-        return redirect(f"{frontend_url}/callback?error={error}")
 
-    if not code:
-        return redirect(f"{frontend_url}/callback?error=no_code")
-
-    # Step 1: Exchange authorization code for access token
-    token_data = AuthService.exchange_facebook_code_for_token(code)
-    if not token_data:
-        return redirect(f"{frontend_url}/callback?error=token_exchange_failed")
-
-    # Step 2: Fetch user profile from Facebook
-    access_token = token_data.get("access_token")
-    user_info = AuthService.get_facebook_user_info(access_token)
-    if not user_info:
-        return redirect(f"{frontend_url}/callback?error=user_info_failed")
-
-    # Extract profile picture URL from Facebook's nested response
-    avatar_url = ""
-    picture_data = user_info.get("picture", {})
-    if isinstance(picture_data, dict) and "data" in picture_data:
-        avatar_url = picture_data["data"].get("url", "")
-
-    # Step 3: Find or create user in our database
-    user = User.find_or_create(
-        facebook_id=user_info.get("id", ""),
-        email=user_info.get("email", ""),
-        display_name=user_info.get("name", ""),
-        avatar_url=avatar_url,
-    )
-
-    # Step 4: Generate our own JWT token
-    token = AuthService.generate_token(user.id)
-
-    # Step 5: Redirect to frontend with token
-    return redirect(f"{frontend_url}/callback?token={token}")
 
 
 @auth_process_bp.route("/facebook/deauthorize", methods=["POST"])

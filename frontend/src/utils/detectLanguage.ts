@@ -20,7 +20,6 @@ const LANG_PATTERNS: Record<string, LangPattern> = {
       /\bif\s+.*:/,
       /\belif\b/,
       /\bself\./,
-      /\bprint\s*\(/,
       /\b__init__\b/,
       /\b__name__\b/,
       /\blambda\s/,
@@ -31,7 +30,9 @@ const LANG_PATTERNS: Record<string, LangPattern> = {
       /:\s*$/m,                        // colon blocks
       /\bexcept\s+\w+/,
       /\bwith\s+\w+.*\bas\b/,
+      /\bprint\s*\(/,
     ],
+    weight: 1.15,
   },
   javascript: {
     keywords: [

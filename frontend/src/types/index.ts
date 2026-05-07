@@ -166,6 +166,8 @@ export interface ResultsPanelProps {
 
 export interface ExportButtonProps {
   code: string;
+  originalCode?: string;
+  scanName?: string;
   language: string;
   disabled: boolean;
 }

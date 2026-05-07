@@ -194,6 +194,8 @@ export default function ScanDetailPage() {
             <div className="comparison-export">
               <ExportButton
                 code={scan.corrected_code}
+                originalCode={scan.original_code}
+                scanName={scan.scan_name}
                 language={scan.language}
                 disabled={!scan.corrected_code}
               />

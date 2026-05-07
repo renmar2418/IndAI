@@ -26,7 +26,7 @@ class User(BaseModel):
     # Social Login (Google)
     google_id = db.Column(db.String(255), unique=True, nullable=True, index=True)
     
-    # Social Login (Facebook)
+    # Social Login (Facebook) - DEPRECATED
     facebook_id = db.Column(db.String(255), unique=True, nullable=True, index=True)
     
     # RBAC (Role-Based Access Control)
@@ -89,16 +89,13 @@ class User(BaseModel):
         """Find a user by email address."""
         return cls.query.filter_by(email=email).first()
 
-    @classmethod
-    def find_by_facebook_id(cls, facebook_id):
-        """Find a user by their Facebook account ID."""
-        return cls.query.filter_by(facebook_id=facebook_id).first()
+
 
     @classmethod
-    def find_or_create(cls, email, display_name, avatar_url=None, google_id=None, facebook_id=None):
+    def find_or_create(cls, email, display_name, avatar_url=None, google_id=None):
         """
         Find an existing user by Social ID or Email, or create a new one.
-        Supports Google and Facebook OAuth. If found by email but no social ID
+        Supports Google OAuth. If found by email but no social ID
         is linked, it syncs the social ID.
         """
         # Try to find by Google ID
@@ -110,24 +107,12 @@ class User(BaseModel):
                 )
                 return user
 
-        # Try to find by Facebook ID
-        if facebook_id:
-            user = cls.find_by_facebook_id(facebook_id)
-            if user:
-                user.update(
-                    email=email, display_name=display_name,
-                    avatar_url=avatar_url if not user.avatar_url else user.avatar_url
-                )
-                return user
-
         # Next, try to find by Email to sync traditional accounts with social
         user_by_email = cls.find_by_email(email)
         if user_by_email:
             update_data = {}
             if google_id and not user_by_email.google_id:
                 update_data['google_id'] = google_id
-            if facebook_id and not user_by_email.facebook_id:
-                update_data['facebook_id'] = facebook_id
             if avatar_url and not user_by_email.avatar_url:
                 update_data['avatar_url'] = avatar_url
             if update_data:
@@ -146,7 +131,6 @@ class User(BaseModel):
 
         return cls.create(
             google_id=google_id,
-            facebook_id=facebook_id,
             username=username,
             email=email,
             display_name=display_name,

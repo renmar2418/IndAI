@@ -9,6 +9,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { AgentEngine } from "../utils/agentEngine";
 import type { AgentMessage } from "../utils/agentEngine";
 import apiService from "../services/api";
+import { useAuth } from "../context/AuthContext";
 
 export default function AgenticWidget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -37,6 +38,7 @@ export default function AgenticWidget() {
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
 
   // Determine current page for context
   const currentPage = location.pathname.startsWith("/scan/")
@@ -99,9 +101,13 @@ export default function AgenticWidget() {
       const scanIdMatch = location.pathname.match(/\/scan\/(\d+)/);
       const contextScanId = scanIdMatch ? parseInt(scanIdMatch[1], 10) : undefined;
 
+      // Check if user is admin
+      const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+
       const response = await AgentEngine.processMessage(messageText, messages, {
         page: currentPage,
         scanId: contextScanId,
+        isAdmin,
       });
 
       setMessages((prev) => [...prev, response]);
@@ -194,16 +200,19 @@ export default function AgenticWidget() {
         id="agent-toggle"
       >
         {isOpen ? (
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="agent-toggle-icon">
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         ) : (
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 2a4 4 0 0 1 4 4v2h1a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3h-1v1a3 3 0 0 1-3 3h-2a3 3 0 0 1-3-3v-1H7a3 3 0 0 1-3-3v-4a3 3 0 0 1 3-3h1V6a4 4 0 0 1 4-4z" />
-            <circle cx="9" cy="13" r="1" fill="currentColor" />
-            <circle cx="15" cy="13" r="1" fill="currentColor" />
-          </svg>
+          <div className="agent-toggle-content">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="agent-toggle-icon">
+              <path d="M12 2a4 4 0 0 1 4 4v2h1a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3h-1v1a3 3 0 0 1-3 3h-2a3 3 0 0 1-3-3v-1H7a3 3 0 0 1-3-3v-4a3 3 0 0 1 3-3h1V6a4 4 0 0 1 4-4z" />
+              <circle cx="9" cy="13" r="1" fill="currentColor" />
+              <circle cx="15" cy="13" r="1" fill="currentColor" />
+            </svg>
+            <span className="agent-toggle-text">Ask AI Buddy</span>
+          </div>
         )}
         {hasUnread && <span className="agent-unread-dot" />}
       </button>

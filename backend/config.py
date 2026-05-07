@@ -24,13 +24,6 @@ class Config:
         "https://indai-webapp-d1857db81932.herokuapp.com/api/v1/process/auth/google/callback",
     )
 
-    # Facebook OAuth
-    FACEBOOK_APP_ID = os.getenv("FACEBOOK_APP_ID", "")
-    FACEBOOK_APP_SECRET = os.getenv("FACEBOOK_APP_SECRET", "")
-    FACEBOOK_REDIRECT_URI = os.getenv(
-        "FACEBOOK_REDIRECT_URI",
-        "https://indai-webapp-d1857db81932.herokuapp.com/api/v1/process/auth/facebook/callback",
-    )
 
     # Superadmin
     SUPERADMIN_EMAIL = os.getenv("SUPERADMIN_EMAIL", "")
